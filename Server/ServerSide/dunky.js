@@ -13,6 +13,7 @@ var io = sockets();
 var server;
 var port = 1337;
 var serverName = 'DunkyBox';
+var keyLength = 8;
 
 //Session setup
 var rooms = [];
@@ -33,44 +34,7 @@ app.use(express.static('../ClientSide/', {
  */
 //Todo put your server functions here
 
-//Creates a new room with the inputted data
-var createRoom = function(creationData){
-    if(!creationData.name){
-        console.error('Error: createRoom : No room name specified.');
-        return;
-    } else if(!creationData.roomJoinPassword){
-        console.error('Error: createRoom : No room join password specified.');
-        return;
-    } else if(!creationData.adminKey){
-        console.error('Error: createRoom : No admin key specified.');
-        return;
-    } else if(!creationData.controlKey){
-        console.error('Error: createRoom : No control key specified.');
-        return;
-    }
-    //Checks if a room with the chosen name already exists
-    for(var i = 0; i < rooms.length; i++){
-        if(rooms[i].name == creationData.name){
-            console.error('Error: createRoom : A room with the name \"' + creationData.name + '\" already exists.');
-            return;
-        }
-    }
-    var newRoom = {
-        'name': creationData.name,
-        'roomJoinPassword': creationData.roomJoinPassword,
-        'adminKey': creationData.adminKey,
-        'controlKey': creationData.controlKey,
-        'playlist':[]
-    };
-    //Adds the room to the rooms array (stores it in memory)
-    rooms.push(newRoom);
-    //Saves a room as a JSON file in the RoomSessions folder
-    fs.writeFile(__dirname + '/RoomSessions/' + room.name + '.json', JSON.stringify(room, null, 4), function(err){
-        if(err){
-            console.error('Error: saveRoomFile: ' + err);
-        }
-    })
-};
+
 
 //Deletes the room with the inputted room name
 var deleteRoom = function(roomName){
@@ -95,10 +59,58 @@ var deleteRoom = function(roomName){
 
 //Updates room data
 var updateRoom = function(roomName, roomData){
+    //Checks that required data is there
+    if(!roomData.name){
+        console.error('Error: updateRoom : No room name specified.');
+        return;
+    } else if(!roomData.roomJoinPassword){
+        console.error('Error: updateRoom : No room join password specified.');
+        return;
+    } else if(!roomData.adminKey){
+        console.error('Error: updateRoom : No admin key specified.');
+        return;
+    } else if(!roomData.controlKey){
+        console.error('Error: updateRoom : No control key specified.');
+        return;
+    }
     var updated = false;
     for(var i = 0; i < rooms.length; i++){
+        if(rooms[i].name == roomName){
+            rooms[i] = roomData;
+            updated = true;
+        }
+    }
+    if(!updated){
+        console.error("Error: updateRoom: No room found with the room name \"" + roomName + "\".");
+        return;
+    }
+    saveRoomToFile(rooms[i]);
+};
+
+//Changes the guest password of the inputted roomName
+var changeRoomPassword = function(roomName, changedAttribute, attributeValue){
+    for(var i = 0; i < rooms.length; i++){
         if(rooms[i].roomName == roomName){
-            rooms[i] == roomData;
+            switch(changedAttribute) {
+                case 'name':
+                    rooms[i].name = attributeValue;
+                    break;
+                case 'roomJoinPassword':
+                    rooms[i].roomJoinPassword = attributeValue;
+                    break;
+                case 'adminKey':
+                    rooms[i].adminKey = attributeValue;
+                    break;
+                case 'controlKey':
+                    rooms[i].controlKey = attributeValue;
+                    break;
+                default:
+                    console.error('Error: changeRoomAttribute: Improper attribute type "' + changedAttribute + '".');
+                    break;
+            }
+            saveRoomToFile(rooms[i]);
+        } else if(i == rooms.length - 1){
+            console.error('Error: changeRoomAttribute: No rooms found with the room name "' + roomName + '".');
         }
     }
 };
@@ -114,14 +126,7 @@ var readRoomFile = function(roomName){
     })
 };
 
-//Changes the guest password of the inputted roomName
-var changeRoomPassword = function(roomName, roomPassword){
-    for(var i = 0; i < rooms.length; i++){
-        if(rooms[i].roomName == roomName){
-            rooms[i].roomPassword = roomPassword;
-        }
-    }
-};
+
 
 
 
@@ -201,19 +206,10 @@ io.on('connection', function (socket) {
     });
 
     socket.on('nickCity', function(data){
-        console.log(data);
+        console.log('HYPE: ' + data);
     });
 
-    //Host has requested to create a room
-    socket.on('createRoom', function(data){
-        if(!data){
-            console.error('Error: Improper data provided for room creation.');
-            //Todo Return error to host
-        } else {
-            createRoom(data);
-            //Todo return confirmation?
-        }
-    });
+
 
     socket.on('testRoom', function(data){
         console.log(JSON.stringify(rooms));
@@ -240,4 +236,66 @@ io.on('connection', function (socket) {
     socket.on('disconnect', function (data) {
         console.log(new Date().toLocaleTimeString() + ' | A user has disconnected. Total users: ' + io.engine.clientsCount);
     });
+
+    //Host has requested to create a room
+    socket.on('createRoom', function(data){
+        if(!data && !data.length){
+            console.error('Error: Improper data provided for room creation.');
+            socket.emit('createRoomHandler', {'message':'No data supplied.'});
+        } else {
+            createRoom(data);
+        }
+    });
+
+    //Creates a new room with the inputted data
+    var createRoom = function(newRoomName, callback){
+        //Makes sure room name is valid
+        if(!newRoomName || !newRoomName.length){
+            console.error('Error: createRoom : No room name specified.');
+            socket.emit('createRoomHandler', {'message':'No room name specified.'});
+            return;
+        }
+        //Checks if a room with the chosen name already exists
+        for(var i = 0; i < rooms.length; i++){
+            if(rooms[i].name == newRoomName){
+                console.error('Error: createRoom : A room with the name \"' + newRoomName + '\" already exists.');
+                socket.emit('createRoomHandler', {'message':'A room with that name already exists.'});
+                return;
+            }
+        }
+
+        var newRoom = {
+            'name': newRoomName,
+            'roomJoinPassword': keyGen(),
+            'adminKey': keyGen(),
+            'controlKey': keyGen(),
+            'playlist':[]
+        };
+        //Adds the room to the rooms array (stores it in memory)
+        rooms.push(newRoom);
+        //Persists the room to a JSON file
+        saveRoomToFile(newRoom);
+
+        delete newRoom.playlist;
+        socket.emit('createRoomHandler', newRoom);
+    };
+
+    //Saves a room as a JSON file in the RoomSessions folder
+    var saveRoomToFile = function(room){
+        fs.writeFile(__dirname + '/RoomSessions/' + room.name + '.json', JSON.stringify(room, null, 4), function(err){
+            if(err){
+                console.error('Error: saveRoomFile: ' + err);
+            }
+        })
+    };
+
+    //Generates a random key and returns it
+    var keyGen = function(){
+        var key = "";
+        var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        for( var i = 0; i < keyLength; i++ ) {
+            key += possible.charAt(Math.floor(Math.random() * possible.length));
+        }
+        return key;
+    };
 });
