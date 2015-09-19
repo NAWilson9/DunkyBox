@@ -35,43 +35,72 @@ app.use(express.static('../ClientSide/', {
 
 //Creates a new room with the inputted data
 var createRoom = function(creationData){
-    var room = {
-        'roomName': creationData.roomName,
-        'roomPassword': creationData.password,
-        'roomAdmin': creationData.admin,
+    if(!creationData.name){
+        console.error('Error: createRoom : No room name specified.');
+        return;
+    } else if(!creationData.roomJoinPassword){
+        console.error('Error: createRoom : No room join password specified.');
+        return;
+    } else if(!creationData.adminKey){
+        console.error('Error: createRoom : No admin key specified.');
+        return;
+    } else if(!creationData.controlKey){
+        console.error('Error: createRoom : No control key specified.');
+        return;
+    }
+    //Checks if a room with the chosen name already exists
+    for(var i = 0; i < rooms.length; i++){
+        if(rooms[i].name == creationData.name){
+            console.error('Error: createRoom : A room with the name \"' + creationData.name + '\" already exists.');
+            return;
+        }
+    }
+    var newRoom = {
+        'name': creationData.name,
+        'roomJoinPassword': creationData.roomJoinPassword,
+        'adminKey': creationData.adminKey,
+        'controlKey': creationData.controlKey,
         'playlist':[]
     };
-    rooms.push(room);
-    saveRoomFile(room);
+    //Adds the room to the rooms array (stores it in memory)
+    rooms.push(newRoom);
+    //Saves a room as a JSON file in the RoomSessions folder
+    fs.writeFile(__dirname + '/RoomSessions/' + room.name + '.json', JSON.stringify(room, null, 4), function(err){
+        if(err){
+            console.error('Error: saveRoomFile: ' + err);
+        }
+    })
 };
 
 //Deletes the room with the inputted room name
 var deleteRoom = function(roomName){
+    var deleted = false;
     for(var i = 0; i < rooms.length; i++){
-          if(rooms[i].roomName == roomName){
+          if(rooms[i].name == roomName){
               rooms.splice(i, 1);
+              deleted = true;
           }
     }
-    deleteRoomFile(roomName);
+    if(!deleted){
+        console.error("Error: deleteRoom: No room found with the room name \"" + roomName + "\".");
+        return;
+    }
+    //Deletes the JSON file corresponding to the inputted room name
+    fs.unlink(__dirname + '/RoomSessions/' + roomName + '.json', function(err){
+        if(err){
+            console.error('Error: deleteRoom: ' + err);
+        }
+    })
 };
 
+//Updates room data
 var updateRoom = function(roomName, roomData){
+    var updated = false;
     for(var i = 0; i < rooms.length; i++){
         if(rooms[i].roomName == roomName){
             rooms[i] == roomData;
         }
     }
-};
-
-//Saves a room as a JSON file in the RoomSessions folder
-var saveRoomFile = function(room){
-    fs.writeFile('/RoomSessions/' + room.roomName + '.json', JSON.stringify(room, null, 4), function(err){
-        if(err){
-            console.log(err);
-        } else {
-            //Todo wii
-        }
-    })
 };
 
 //Reads a room from it's json file and returns it in an object
@@ -82,15 +111,6 @@ var readRoomFile = function(roomName){
         } else {
             return data;
         }
-    })
-};
-
-var deleteRoomFile = function(roomName){
-    fs.unlink('/RoomSessions/' + roomName + '.json', function(err){
-        if(err){
-            console.log(err);
-        }
-        //Todo wii
     })
 };
 
@@ -180,14 +200,23 @@ io.on('connection', function (socket) {
          }*/
     });
 
+    socket.on('nickCity', function(data){
+        console.log(data);
+    });
+
     //Host has requested to create a room
     socket.on('createRoom', function(data){
-        if(!data || !data.length){
-            console.log('Error: Improper data provided for room creation.');
+        if(!data){
+            console.error('Error: Improper data provided for room creation.');
             //Todo Return error to host
+        } else {
+            createRoom(data);
+            //Todo return confirmation?
         }
-        createRoom(data);
-        //Todo return confirmation?
+    });
+
+    socket.on('testRoom', function(data){
+        console.log(JSON.stringify(rooms));
     });
 
     socket.on('deleteRoom', function(data){

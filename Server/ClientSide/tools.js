@@ -4,7 +4,6 @@
 
     var pushSong = function () {
         var link = document.getElementById('hype1').value;
-        document.getElementById('hype1').value = '';
         if (link.length)
             socket.emit('pushSong', link);
     };
@@ -33,3 +32,21 @@ socket.on('updateCurList', function (data) {
         document.getElementById('curlist').innerHTML = 'Current List: Empty!';
     }
 });
+
+var testerino = function(){
+    var room = {
+        'name': document.getElementById('hypea').value,
+        'roomJoinPassword': document.getElementById('hypeb').value,
+        'adminKey': document.getElementById('hypec').value,
+        'controlKey': document.getElementById('hyped').value
+    };
+    socket.emit('createRoom', room);
+};
+
+var test = function(){
+    socket.emit('testRoom');
+};
+
+var deleteTest = function(){
+    socket.emit('deleteRoom', document.getElementById('hypea').value);
+};

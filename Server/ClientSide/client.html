@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>DunkyBoard</title>
+    <title>DunkyBox</title>
     <!-- Javascript dependencies -->
     <script src="./socket.io/socket.io.js"></script>
     <script>var socket = io.connect(window.location.origin);</script>
@@ -17,10 +17,15 @@
     <br/>
     <span>Room Name</span>
     <input id="hypea" type="text">
-    <span>Room Password</span>
+    <span>Room Join Password</span>
     <input id="hypeb" type="text">
-    <span>Room Admin</span>
+    <span>Admin Key</span>
     <input id="hypec" type="text">
+    <span>Control Key</span>
+    <input id="hyped" type="text">
+    <button onclick="testerino()">New Room</button>
+    <button onclick="test()">Print Rooms</button>
+    <button onclick="deleteTest()">Delete Last Room</button>
 </div>
 </br>
 <span id="curlist">dasd</span>
