@@ -13,6 +13,12 @@ var server;
 var port = 1337;
 var serverName = 'DunkyBox';
 
+var songData = {
+    "roomKeys" : [
+        {"key" : "testkey", "queue" : []}
+    ]
+};
+
 //Todo link your libraries here...
 app.use(express.static('../ClientSide/', {
     extensions: ['html'],
@@ -69,7 +75,7 @@ var initializeServer = function(functions, startServer) {
 AJAX Routes
  */
 app.get('/someAddress',function(req, res){
-    //Todo do something...
+    console.log('knob');
 });
 
 /*
@@ -82,8 +88,22 @@ io.on('connection', function (socket) {
     /*
      ** Socket routes
      */
-    socket.on('someAddress', function(data){
-        console.log(data);
+    socket.on('pushSong', function(data){
+        songData.roomKeys[0].queue.push(data);
+        socket.emit("updateCurList", songData.roomKeys[0].queue.toString());
+        console.log('Current list: ' + songData.roomKeys[0].queue.toString());
+    });
+
+    socket.on('popSong', function(){
+
+       // if(songData.roomKeys[0].queue.length) {
+            socket.emit("returnSong", songData.roomKeys[0].queue.shift());
+            socket.emit("updateCurList", songData.roomKeys[0].queue.toString());
+            console.log('Current list: ' + songData.roomKeys[0].queue.toString());
+       /* }
+        else{
+            console.log('List empty!')
+        }*/
     });
 
     //A user has disconnected

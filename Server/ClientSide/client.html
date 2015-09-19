@@ -9,9 +9,14 @@
         var socket = io.connect(window.location.origin);
     </script>
 </head>
-<body>
+<br>
 <span>Enter the link to the song:</span>
 <input id="hype1" type="text">
-<button id="hype2" onclick="testerino()">Submit</button>
+<button id="hype2" onclick="pushSong()">Add</button>
+<button id="hype3" onclick="popSong()">Pop</button>
+</br>
+<span id="curlist">dasd</span>
+</br>
+<span id="popped"></span>
 </body>
 </html>
