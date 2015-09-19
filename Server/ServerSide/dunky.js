@@ -5,6 +5,7 @@
 //Link dependencies
 var express = require('express');
 var sockets = require('socket.io');
+var fs = require('fs');
 
 //Setup server
 var app = express();
@@ -13,6 +14,8 @@ var server;
 var port = 1337;
 var serverName = 'DunkyBox';
 
+//Session setup
+var rooms = [];
 var songData = {
     "roomKeys" : [
         {"key" : "testkey", "queue" : []}
@@ -29,6 +32,77 @@ app.use(express.static('../ClientSide/', {
  Server functions
  */
 //Todo put your server functions here
+
+//Creates a new room with the inputted data
+var createRoom = function(creationData){
+    var room = {
+        'roomName': creationData.roomName,
+        'roomPassword': creationData.password,
+        'roomAdmin': creationData.admin,
+        'playlist':[]
+    };
+    rooms.push(room);
+    saveRoomFile(room);
+};
+
+//Deletes the room with the inputted room name
+var deleteRoom = function(roomName){
+    for(var i = 0; i < rooms.length; i++){
+          if(rooms[i].roomName == roomName){
+              rooms.splice(i, 1);
+          }
+    }
+    deleteRoomFile(roomName);
+};
+
+var updateRoom = function(roomName, roomData){
+    for(var i = 0; i < rooms.length; i++){
+        if(rooms[i].roomName == roomName){
+            rooms[i] == roomData;
+        }
+    }
+};
+
+//Saves a room as a JSON file in the RoomSessions folder
+var saveRoomFile = function(room){
+    fs.writeFile('/RoomSessions/' + room.roomName + '.json', JSON.stringify(room, null, 4), function(err){
+        if(err){
+            console.log(err);
+        } else {
+            //Todo wii
+        }
+    })
+};
+
+//Reads a room from it's json file and returns it in an object
+var readRoomFile = function(roomName){
+    fs.readFile('/RoomSessions/' + roomName + '.json', function(err, data){
+        if(err){
+            console.log(err);
+        } else {
+            return data;
+        }
+    })
+};
+
+var deleteRoomFile = function(roomName){
+    fs.unlink('/RoomSessions/' + roomName + '.json', function(err){
+        if(err){
+            console.log(err);
+        }
+        //Todo wii
+    })
+};
+
+//Changes the guest password of the inputted roomName
+var changeRoomPassword = function(roomName, roomPassword){
+    for(var i = 0; i < rooms.length; i++){
+        if(rooms[i].roomName == roomName){
+            rooms[i].roomPassword = roomPassword;
+        }
+    }
+};
+
 
 
 //Handles the initial server setup before starting
@@ -96,14 +170,41 @@ io.on('connection', function (socket) {
 
     socket.on('popSong', function(){
 
-       // if(songData.roomKeys[0].queue.length) {
-            socket.emit("returnSong", songData.roomKeys[0].queue.shift());
-            socket.emit("updateCurList", songData.roomKeys[0].queue.toString());
-            console.log('Current list: ' + songData.roomKeys[0].queue.toString());
-       /* }
-        else{
-            console.log('List empty!')
-        }*/
+        // if(songData.roomKeys[0].queue.length) {
+        socket.emit("returnSong", songData.roomKeys[0].queue.shift());
+        socket.emit("updateCurList", songData.roomKeys[0].queue.toString());
+        console.log('Current list: ' + songData.roomKeys[0].queue.toString());
+        /* }
+         else{
+         console.log('List empty!')
+         }*/
+    });
+
+    //Host has requested to create a room
+    socket.on('createRoom', function(data){
+        if(!data || !data.length){
+            console.log('Error: Improper data provided for room creation.');
+            //Todo Return error to host
+        }
+        createRoom(data);
+        //Todo return confirmation?
+    });
+
+    socket.on('deleteRoom', function(data){
+        if(!data || !data.length){
+            console.log('Error: Improper data provided for room deletion.');
+            //Todo Return error to host
+        }
+        deleteRoom(data);
+        //Todo return confirmation?
+    });
+
+    socket.on('changeRoomPassword', function(data){
+        if(!dagta || !data.length){
+            console.log("Error: Improper data provided for room password change.");
+            //Todo Return error to host
+        }
+        changeRoomPassword(data.roomName, data.roomPassword);
     });
 
     //A user has disconnected

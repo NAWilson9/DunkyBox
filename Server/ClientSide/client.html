@@ -3,17 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <title>DunkyBoard</title>
-    <script src="tools.js"></script>
+    <!-- Javascript dependencies -->
     <script src="./socket.io/socket.io.js"></script>
-    <script>
-        var socket = io.connect(window.location.origin);
-    </script>
+    <script>var socket = io.connect(window.location.origin);</script>
+    <script src="tools.js"></script>
 </head>
 <br>
 <span>Enter the link to the song:</span>
 <input id="hype1" type="text">
 <button id="hype2" onclick="pushSong()">Add</button>
 <button id="hype3" onclick="popSong()">Pop</button>
+<div>
+    <br/>
+    <span>Room Name</span>
+    <input id="hypea" type="text">
+    <span>Room Password</span>
+    <input id="hypeb" type="text">
+    <span>Room Admin</span>
+    <input id="hypec" type="text">
+</div>
 </br>
 <span id="curlist">dasd</span>
 </br>
