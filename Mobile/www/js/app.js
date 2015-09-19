@@ -30,7 +30,7 @@ app.run(function($ionicPlatform) {
 
     // socket bs
     socket = io('http://10.26.41.108:1337');
-    socket.emit('nickCity', 'Nick, there\'s a hundred million otha things that i\'d ratha do');
+    //socket.emit('nickCity', 'Nick, there\'s a hundred million otha things that i\'d ratha do');
 
   });
 });
