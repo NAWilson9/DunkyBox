@@ -2,9 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title></title>
+    <title>DunkyBoard</title>
+    <script src="tools.js"></script>
+    <script src="./socket.io/socket.io.js"></script>
+    <script>
+        var socket = io.connect(window.location.origin);
+    </script>
 </head>
 <body>
-WII, PLAYAAAA
+<span>Enter the link to the song:</span>
+<input id="hype1" type="text">
+<button id="hype2" onclick="testerino()">Submit</button>
 </body>
 </html>

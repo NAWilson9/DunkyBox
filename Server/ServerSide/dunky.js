@@ -83,7 +83,7 @@ io.on('connection', function (socket) {
      ** Socket routes
      */
     socket.on('someAddress', function(data){
-        //Todo do something...
+        console.log(data);
     });
 
     //A user has disconnected
