@@ -11,6 +11,7 @@ app.config(function($ionicConfigProvider) {
 
   // note that you can also chain configs
 });
+socket = io('http://10.26.41.108:1337');
 app.config(function($stateProvider, $urlRouterProvider){
     //$urlRouterProvider.otherwise('/');
 
@@ -19,6 +20,10 @@ app.config(function($stateProvider, $urlRouterProvider){
     //  templateUrl: 'templates/home.html',
     //  controller: 'homeController'
     //});
+
+  app.listenerExists =  function(eventName) {
+    return socket.hasOwnProperty("$events") && socket.$events.hasOwnProperty(eventName);
+  };
   app.room = {
     roomName:'',
     roomPassword:'',
@@ -132,7 +137,6 @@ app.controller('roomController', function($scope, $ionicPopup, $location) {
   $scope.room = app.room;
   $scope.permissions = app.permissions;
 
-  socket = io('http://10.26.41.108:1337');
   socket.on('becomeModeratorHandler',function(data){
     if(data.message){
       $scope.showAlert(data.message);
@@ -210,6 +214,7 @@ app.controller('roomController', function($scope, $ionicPopup, $location) {
   };
 
   $scope.changeRoomAttribute = function(name,key, attributeType){
+    console.log(attributeType);
     socket.emit('changeRoomAttribute',name,key,attributeType);
   };
 
@@ -229,7 +234,6 @@ $scope.createRoom = function(name){
       console.log('Test Alert Box');
     });
   };
-
 });
 
 app.addSong = function(song){
@@ -273,7 +277,7 @@ app.controller('queueController', function($scope) {
   $scope.removeSong = function(index){
     socket.emit('removeSong',app.room.roomName,app.room.moderatorKey,index);
   };
-
+if(!app.listenerExists('getSongListHandler'))
   socket.on('getSongListHandler',function(data){
     console.log(data);
     if(data.message){
@@ -281,6 +285,7 @@ app.controller('queueController', function($scope) {
     }
     else{
       $scope.tracks = data;
+      app.playing = $scope.tracks[0];
       $scope.$apply();
     }
   });
@@ -348,7 +353,7 @@ app.controller('playerController', function($scope, $ionicPopup){
   $scope.removeSong = function(index){
     socket.emit('removeSong',app.room.roomName,app.room.moderatorKey,index);
   };
-
+  if(!app.listenerExists('getSongListHandler'))
   socket.on('getSongListHandler',function(data){
     console.log(JSON.stringify(data));
     if(data.message){

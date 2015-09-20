@@ -8,24 +8,23 @@ navigation history that also transitions its views in and out.
     <a class="button icon ion-android-arrow-back" href="#/player"></a>
   </ion-nav-buttons>
   <div class="content has-header ionic-body">
-    <div class="list">
       <div class="item">
         {{room.roomName}}
       </div>
-      <div class="item item-button-right item-stacked-label">
+      <label class="item item-button-right item-stacked-label">
         <span class="input-label">Room Password</span>
-        {{room.roomPassword}}
-        <button class="button button-positive icon ion-ios-reload" ng-style="!permissions.admin && {'display':'none'}" ng-click="changeRoomAttribute(room.roomName,room.adminKey,'roomPassword')"></button>
-      </div>
-      <div class="item item-button-right item-stacked-label" ng-style="!permissions.admin && {'display':'none'}">
+        <input type="text" placeholder={{room.roomPassword}} readonly ng-click="changeRoomAttribute(room.roomName,room.adminKey,'roomPassword')">
+        <button class="button button-positive icon ion-ios-reload" ng-style="!permissions.admin && {'display':'none'}"></button>
+    </label>
+      <label class="item item-button-right item-stacked-label" ng-style="!permissions.admin && {'display':'none'}">
         <span class="input-label">Admin Key</span>
-        {{room.adminKey}}
-      </div>
-      <div class="item item-button-right item-stacked-label" ng-style="!permissions.mod && {'display':'none'}">
+        <input type="text" placeholder="{{room.adminKey}}" readonly>
+      </label>
+      <label class="item item-button-right item-stacked-label" ng-style="!permissions.mod && {'display':'none'}">
         <span class="input-label">Moderator Key</span>
-        {{room.moderatorKey}}
-        <button class="button button-positive icon ion-ios-reload" ng-click="changeRoomAttribute(room.roomName,room.adminKey,'moderatorKey')" ng-style="!permissions.admin && {'display':'none'}"></button>
-      </div>
+        <input type="text" placeholder="{{room.moderatorKey}}" readonly ng-click="changeRoomAttribute(room.roomName,room.adminKey,'moderatorKey')">
+        <button class="button button-positive icon ion-ios-reload" ng-style="!permissions.admin && {'display':'none'}"></button>
+      </label>
       <div class="item item-button-right item-stacked-label" ng-style="permissions.mod && {'display':'none'}">
         <input class="col col-75" ng-model="modKey" type="text" placeholder="Moderator Key">
         <button class="button icon ion-unlocked button-positive" ng-click="becomeModerator(room.roomName,room.roomPassword,modKey)"></button>
