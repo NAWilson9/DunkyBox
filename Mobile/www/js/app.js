@@ -19,10 +19,22 @@ app.config(function($stateProvider, $urlRouterProvider){
     //  templateUrl: 'templates/home.html',
     //  controller: 'homeController'
     //});
+  app.room = {
+    roomName:'',
+    roomPassword:'',
+    adminKey:'Insufficient Priviledges',
+    moderatorKey:'Insufficient Priviledges',
+    playlist:[]
+  };
+  app.permissions = {
+    admin: false,
+    mod: false
+  };
+
   $stateProvider.state('player', {
     url: '/player',
     templateUrl: 'templates/playerview.html',
-    controller: 'homeController'
+    controller: 'playerController'
   });
   $stateProvider.state('room', {
     url: '/room',
@@ -34,7 +46,7 @@ app.config(function($stateProvider, $urlRouterProvider){
     views: {
       'tab-createroom': {
         templateUrl: 'templates/tab-createroom.html',
-        controller: 'homeController'
+        controller: 'roomController'
       }
     }
   });
@@ -43,14 +55,19 @@ app.config(function($stateProvider, $urlRouterProvider){
     views: {
       'tab-joinroom': {
         templateUrl: 'templates/tab-joinroom.html',
-        controller: 'homeController'
+        controller: 'roomController'
       }
     }
   });
   $stateProvider.state('queue', {
     url: '/queue',
     templateUrl: 'templates/queueview.html',
-    controller: 'homeController'
+    controller: 'queueController'
+  });
+  $stateProvider.state('manage', {
+    url: '/manage',
+    templateUrl: 'templates/managelist.html',
+    controller: 'roomController'
   });
   $urlRouterProvider.otherwise('/room/create');
 });
@@ -105,6 +122,167 @@ app.tracks= [
 ];
 app.playingIndex = 1;
 app.playing = app.tracks[app.playingIndex];
+
+app.controller('roomController', function($scope, $ionicPopup, $location) {
+  $scope.goNext = function(hash){$location.path(hash).replace();
+  $scope.$apply();}
+
+  $scope.room = app.room;
+  $scope.permissions = app.permissions;
+
+  socket.on('becomeModeratorHandler',function(data){
+    if(data.message){
+      $scope.showAlert(data.message);
+    }
+    else{
+      app.permissions.mod = true;
+      $scope.permissions = app.permissions;
+      $scope.room = app.room;
+      $scope.$apply();
+    }
+  });
+
+  socket.on('joinRoomHandler',function(data){
+    if(data.message){
+      $scope.showAlert(data.message);
+    }
+    else{
+      app.room.roomName = data;
+      $scope.room = app.room;
+      app.permissions.admin = false;
+      app.permissions.mod = false;
+      $scope.permissions = app.permissions;
+      $scope.goNext('/player');
+    }
+  });
+
+  socket.on('changeRoomAttributeHandler',function(data){
+      if(data.message){
+      $scope.showAlert(data.message);
+    }
+    else {
+      if (data.attributeType == 'roomPassword') {
+        app.room.roomPassword = data.newValue;
+        console.log(data.newValue);
+        console.log(app.room.roomPassword);
+      } else if (data.attributeType == 'moderatorKey') {
+        app.room.moderatorKey = data.newValue;
+      }
+      $scope.room = app.room;
+      $scope.$apply();
+    }
+  });
+
+  socket.on('createRoomHandler', function(data){
+    if(data.message){
+      $scope.showAlert(data.message);
+    }
+    else{
+      app.room = data;
+      app.permissions.admin = true;
+      app.permissions.mod = true;
+      $scope.room = app.room;
+      $scope.permissions = app.permissions;
+      $scope.goNext('/manage');
+    }
+  });
+
+  socket.on('deleteRoomHandler',function(data){
+    if(data.message){
+      $scope.showAlert(data.message);
+    }
+    else{
+      $scope.goNext('/');
+    }
+  });
+
+  $scope.becomeModerator = function(name,password,modKey){
+    socket.emit('becomeModerator',name,password,modKey);
+    app.room.moderatorKey = modKey;
+  };
+
+  $scope.joinRoom = function(password){
+    socket.emit('joinRoom',password);
+    app.room.roomPassword = password;
+  };
+
+  $scope.changeRoomAttribute = function(name,key, attributeType){
+    socket.emit('changeRoomAttribute',name,key,attributeType);
+  };
+
+  $scope.deleteRoom = function(name,key){
+    socket.emit('deleteRoom',name,key);
+  };
+
+$scope.createRoom = function(name){
+  socket.emit('createRoom',name);
+};
+
+  $scope.showAlert = function(message) {
+    $ionicPopup.alert({
+      title: 'Error',
+      content: message
+    }).then(function(res) {
+      console.log('Test Alert Box');
+    });
+  };
+
+});
+
+app.controller('queueController', function($scope) {
+
+  socket.on('addSongHandler', function(data){
+    if(data.message){
+      $scope.showAlert(data.message);
+    }
+    else{
+
+    }
+  });
+
+  $scope.addSong = function(song){
+    socket.emit('addSong',app.room.roomName,app.room.roomPassword,song);
+  };
+
+  socket.on('removeSongHandler', function(data){
+    if(data.message){
+      $scope.showAlert(data.message);
+    }
+    else{
+
+    }
+  });
+
+  $scope.removeSong = function(index){
+    socket.emit('removeSong',app.room.roomName,app.room.moderatorKey,index);
+  };
+
+  socket.on('getSongListHandler',function(data){
+    if(data.message){
+      $scope.showAlert(data.message);
+    }
+    else{
+      $scope.tracks = data.songList;
+      console.log(songList);
+      $scope.$apply();
+    }
+  });
+
+  $scope.getSongList = function(amount){
+    socket.emit('getSongList',app.room.roomName,app.room.roomPassword,amount);
+  };
+
+  $scope.showAlert = function(message) {
+    $ionicPopup.alert({
+      title: 'Error',
+      content: message
+    }).then(function(res) {
+      console.log('Test Alert Box');
+    });
+  };
+  $scope.getSongList(15);
+});
+
 app.controller('homeController', function($scope){
   //$scope.content = "hey potato";
   $scope.playing = app.playing;
@@ -118,6 +296,7 @@ app.controller('homeController', function($scope){
     app.tracks.splice(index,1);
     $scope.tracks = app.tracks;
   };
+  $scope.room = app.room;
 
   $scope.playPause = function(index){
     if(index != app.playingIndex){
@@ -137,3 +316,42 @@ app.controller('homeController', function($scope){
 
 });
 
+app.controller('playerController', function($scope){
+  socket.on('removeSongHandler', function(data){
+    if(data.message){
+      $scope.showAlert(data.message);
+    }
+    else{
+
+    }
+  });
+
+  $scope.removeSong = function(index){
+    socket.emit('removeSong',app.room.roomName,app.room.moderatorKey,index);
+  };
+
+  socket.on('getSongListHandler',function(data){
+    if(data.message){
+      $scope.showAlert(data.message);
+    }
+    else{
+      $scope.playing = data.songList[0];
+      console.log(songList);
+      $scope.$apply();
+    }
+  });
+
+  $scope.getSongList = function(amount){
+    socket.emit('getSongList',app.room.roomName,app.room.roomPassword,amount);
+  };
+
+  $scope.showAlert = function(message) {
+    $ionicPopup.alert({
+      title: 'Error',
+      content: message
+    }).then(function(res) {
+      console.log('Test Alert Box');
+    });
+  };
+  $scope.getSongList(1);
+});

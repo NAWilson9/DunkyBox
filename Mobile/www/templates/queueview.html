@@ -6,6 +6,7 @@ navigation history that also transitions its views in and out.
 <ion-view title="Queue Bullshit">
   <ion-nav-buttons side="right">
     <a class="button icon ion-android-arrow-back" href="#/player"></a>
+    <a class="button icon ion-android-settings" href="#/manage"></a>
   </ion-nav-buttons>
   <div class="content has-header ionic-body">
     <div class="list card" ng-repeat="track in tracks">
@@ -16,8 +17,8 @@ navigation history that also transitions its views in and out.
         </div>
         <div class="col col-50">
           <div class="button-bar">
-            <a class="button icon" ng-class="{'ion-play': !track.playing, 'ion-pause':track.playing}" ng-click="playPause($index)"></a>
-            <a class="button icon ion-trash-a" ng-click="removeItem($index)"></a>
+            <a class="button icon" ng-class="{'ion-play': !track.playing, 'ion-pause':track.playing}" ng-click="playPause($index)" ng-style="!permissions.mod && {'display':'none'}"></a>
+            <a class="button icon ion-trash-a" ng-click="removeSong($index)" ng-style="!permissions.mod && {'display':'none'}"></a>
             <a class="button icon ion-thumbsup"></a>
             <a class="button icon ion-thumbsdown"></a>
           </div>

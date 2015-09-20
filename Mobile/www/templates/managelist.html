@@ -1,0 +1,32 @@
+<!--
+Create tabs with an icon and label, using the tabs-positive style.
+Each tab's child <ion-nav-view> directive will have its own
+navigation history that also transitions its views in and out.
+-->
+<ion-view title="Manage Shits">
+  <ion-nav-buttons side="right">
+    <a class="button icon ion-android-arrow-back" href="#/player"></a>
+  </ion-nav-buttons>
+  <div class="content has-header ionic-body">
+    <div class="list">
+      <div class="item">
+        {{room.roomName}}
+      </div>
+      <div class="item item-button-right">{{room.roomPassword}}
+        <button class="button button-positive icon ion-ios-reload" ng-style="!permissions.admin && {'display':'none'}" ng-click="changeRoomAttribute(room.roomName,room.adminKey,'roomPassword')"></button>
+      </div>
+      <div class="item item-button-right" ng-style="!permissions.admin && {'display':'none'}">{{room.adminKey}}
+      </div>
+      <div class="item item-button-right" ng-style="!permissions.mod && {'display':'none'}">{{room.moderatorKey}}
+        <button class="button button-positive icon ion-ios-reload" ng-click="changeRoomAttribute(room.roomName,room.adminKey,'moderatorKey')" ng-style="!permissions.admin && {'display':'none'}"></button>
+      </div>
+      <div class="item item-button-right" ng-style="permissions.mod && {'display':'none'}">
+        <input class="col col-75" ng-model="modKey" type="text" placeholder="Moderator Key">
+        <button class="button icon ion-unlocked button-positive" ng-click="becomeModerator(room.roomName,room.roomPassword,modKey)"></button>
+      </div>
+      <div class="row">
+      <button class="button col col-50">Save</button><button class="button col col-50" ng-click="deleteRoom(room.roomName,room.adminKey)">Delete</button>
+        </div>
+    </div>
+  </div>
+</ion-view>

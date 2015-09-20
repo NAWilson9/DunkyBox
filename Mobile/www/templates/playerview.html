@@ -6,6 +6,7 @@ navigation history that also transitions its views in and out.
 <ion-view title="Player Bullshit">
   <ion-nav-buttons side="right">
     <a class="button icon ion-android-list" href="#/queue"></a>
+    <a class="button icon ion-android-settings" href="#/manage"></a>
   </ion-nav-buttons>
   <div class="content has-header ionic-body">
     <div class="list card">
@@ -13,17 +14,16 @@ navigation history that also transitions its views in and out.
       <div class="item" >
 
         <h2>{{playing.title}}</h2>
-
-        <p>{{playing.artist}}</p>
+        <p ng-style="playing.type == 'soundcloud' && {'display':'none'}">{{playing.artist}}</p>
       </div>
 
       <div class="item item-image">
         <img src="{{playing.albumart}}">
       </div>
-      <div class="button-bar"><a class="button icon ion-skip-backward"></a>
-        <a class="button icon ion-play"></a>
-        <a class="button icon ion-skip-forward"></a>
-        <a class="button icon ion-trash-a"></a>
+      <div class="button-bar"><a class="button icon ion-skip-backward" ng-style="(!permissions.admin && !permissions.mod) && {'display':'none'}"></a>
+        <a class="button icon ion-play" ng-style="(!permissions.admin && !permissions.mod) && {'display':'none'}"></a>
+        <a class="button icon ion-skip-forward" ng-style="(!permissions.admin && !permissions.mod) && {'display':'none'}"></a>
+        <a class="button icon ion-trash-a" ng-style="(!permissions.admin && !permissions.mod) && {'display':'none'}"></a>
         <a class="button icon ion-thumbsup"></a>
         <a class="button icon ion-thumbsdown"></a>
       </div>

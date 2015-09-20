@@ -1,13 +1,14 @@
 <ion-view view-title="Join Room">
   <div class="content has-header  has-tabs-top">
     <div class="list">
-      <label class="item item-input">
-        <i class="icon ion-search placeholder-icon"></i>
-        <input type="text" placeholder="Search (Room Name)">
-      </label>
-      <label class="item item-input">
-        <button class="button icon-left ion-location">Nearby</button>
-      </label>
+        <div class="item item-input item-floating-label">
+          <span class="input-label">Room Password</span>
+        <input type="text" placeholder="Room Password" ng-model="password">
+          </div>
+      <div class="row">
+        <button class="button col-50" ng-click="joinRoom(password)">Join Room</button>
+          <button class="button icon-left ion-location col-50">Find Nearby</button>
+      </div>
     </div>
   </div>
 </ion-view>
