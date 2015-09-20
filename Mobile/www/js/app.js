@@ -8,13 +8,47 @@ var socket;
 var app = angular.module('DunkyBox', ['ionic']);
 
 app.config(function($stateProvider, $urlRouterProvider){
-    $urlRouterProvider.otherwise('/');
+    //$urlRouterProvider.otherwise('/');
 
-    $stateProvider.state('home', {
-      url: '/',
-      templateUrl: 'templates/home.html',
-      controller: 'homeController'
-    });
+    //$stateProvider.state('home', {
+    //  url: '/',
+    //  templateUrl: 'templates/home.html',
+    //  controller: 'homeController'
+    //});
+  $stateProvider.state('player', {
+    url: '/player',
+    templateUrl: 'templates/playerview.html',
+    controller: 'homeController'
+  });
+  $stateProvider.state('room', {
+    url: '/room',
+    templateUrl: 'templates/tabs.html',
+    abstract: true
+  });
+  $stateProvider.state('room.create', {
+    url: '/create',
+    views: {
+      'tab-createroom': {
+        templateUrl: 'templates/tab-createroom.html',
+        controller: 'homeController'
+      }
+    }
+  });
+  $stateProvider.state('room.join', {
+    url: '/join',
+    views: {
+      'tab-joinroom': {
+        templateUrl: 'templates/tab-joinroom.html',
+        controller: 'homeController'
+      }
+    }
+  });
+  $stateProvider.state('queue', {
+    url: '/queue',
+    templateUrl: 'templates/queueview.html',
+    controller: 'homeController'
+  });
+  $urlRouterProvider.otherwise('/room/create');
 });
 
 app.run(function($ionicPlatform) {
@@ -34,10 +68,57 @@ app.run(function($ionicPlatform) {
 
   });
 });
-
+app.tracks= [
+  {
+    title: "BIC BOI",
+    artist: "KNOB",
+    playing: false,
+    albumart: "https://i.scdn.co/image/07c323340e03e25a8e5dd5b9a8ec72b69c50089d"
+  },
+  {
+    title: "Scoot",
+    artist: "Le Doot",
+    playing: true,
+    albumart: "https://i.scdn.co/image/07c323340e03e25a8e5dd5b9a8ec72b69c50089d"
+  },
+  {
+    title: "She's So Unusual",
+    artist: "Cyndi Lauper",
+    playing: false,
+    albumart: "https://i.scdn.co/image/07c323340e03e25a8e5dd5b9a8ec72b69c50089d"
+  }
+];
+app.playingIndex = 1;
+app.playing = app.tracks[app.playingIndex];
 app.controller('homeController', function($scope){
+  //$scope.content = "hey potato";
+  $scope.playing = app.playing;
+  $scope.playingIndex = app.playingIndex;
+  $scope.tracks = app.tracks;
+  $scope.removeItem = function(index){
+    if(index < app.playingIndex){
+      app.playingIndex = app.playingIndex-1;
+      $scope.playingIndex = app.playingIndex;
+    }
+    app.tracks.splice(index,1);
+    $scope.tracks = app.tracks;
+  };
 
-  $scope.content = "hey potato";
+  $scope.playPause = function(index){
+    if(index != app.playingIndex){
+      app.tracks[app.playingIndex].playing = false;
+      app.tracks[index].playing = true;
+      app.playing = app.tracks[index];
+      app.playingIndex = index;
+      $scope.playing = app.playing;
+      $scope.playingIndex = app.playingIndex;
+      $scope.tracks = app.tracks;
+    }
+    else{
+      app.tracks[index].playing = !app.tracks[index].playing;
+      $scope.tracks = app.tracks;
+    }
+  };
 
 });
 
