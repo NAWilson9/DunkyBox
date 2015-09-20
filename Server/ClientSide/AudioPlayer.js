@@ -2,8 +2,8 @@
  * Created by cmbranc on 9/19/15.
  */
 
-
-var queue = [];
+var GLOBAL_ROOMNAME = '';
+var songLoaded = false;
 
 // 2. This code loads the IFrame Player API code asynchronously.
 var tag = document.createElement('script');
@@ -16,23 +16,23 @@ firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 //    after the API code downloads.
 var player;
 function onYouTubeIframeAPIReady() {
-  player = new YT.Player('player', {
-    /*  height: '480',
-     width: '853',
-     */
-    height: '0',
-    width: '0',
-    videoId: 'fzirfZMWHyo',
-    events: {
-      'onReady': onPlayerReady,
-      'onStateChange': onPlayerStateChange
-    }
-  });
+    player = new YT.Player('player', {
+        /*  height: '480',
+         width: '853',
+         */
+        height: '0',
+        width: '0',
+        videoId: 'fzirfZMWHyo',
+        events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange
+        }
+    });
 }
 
 // 4. The API will call this function when the video player is ready.
 function onPlayerReady(event) {
-  updateState();
+    updateState();
 }
 
 // 5. The API calls this function when the player's state changes.
@@ -40,71 +40,81 @@ function onPlayerReady(event) {
 //    the player should play for six seconds and then stop.
 var done = false;
 function onPlayerStateChange(event) {
-  updateState();
-  updateTitle();
-  updateNextTrackDisplay();
-  if(getVideoState() === -1){
-    document.getElementById('error').innerHTML = "This video cannot be played unless you are on Youtube.com";
-  }
-  else {
-    document.getElementById('error').innerHTML = "";
-  }
+    updateState();
+    updateTitle();
+    if (getVideoState() === -1) {
+        document.getElementById('error').innerHTML = "This video cannot be played unless you are on Youtube.com";
+    }
+    else {
+        document.getElementById('error').innerHTML = "";
+    }
 
-  if(getVideoState() === 0){
-    playNext();
-  }
+    if (getVideoState() === 0) {
+        console.log('here')
+        playNext();
+    }
 }
 function playVideo() {
-  player.playVideo();
+    if(songLoaded){
+        player.playVideo();
+        songLoaded = true;
+    }
+    else{
+        playNext();
+    }
 }
 function pauseVideo() {
-  player.pauseVideo();
+    player.pauseVideo();
 }
 function getVideoState() {
-  return player.getPlayerState();
+    return player.getPlayerState();
 }
-function loadYTLink(){
-  var id = parseURL(getYTLink());
-
-  if(id.length){
-    player.loadVideoById(id, 0, "large");
-  }
+function loadYTLink() {
+    var id = parseURL(getYTLink());
+    GLOBAL_ROOMNAME = getRoomName();
+    if (id.length) {
+        player.loadVideoById(id, 0, "large");
+    }
+}
+function loadYTID(id){
+    if (id.length) {
+        player.loadVideoById(id, 0, "large");
+    }
 }
 function playNext() {
-  var id = dequeueID();
-  if (id.length) {
-    player.loadVideoById(id, 0, "large");
-  }
+    socket.emit('popSong', GLOBAL_ROOMNAME);
 }
-function updateTitle(){
-  document.getElementById( "title" ).innerHTML = player.getVideoData().title;
+function updateTitle() {
+    document.getElementById("title").innerHTML = player.getVideoData().title;
 }
 function updateNextTrackDisplay() {
-  if (queue.length) {
-    document.getElementById( "nextTrack" ).innerHTML = queue[0];
-  }
-  else{
-    document.getElementById( "nextTrack" ).innerHTML = "None";
-  }
+    if (queue.length) {
+        document.getElementById("nextTrack").innerHTML = queue[0];
+    }
+    else {
+        document.getElementById("nextTrack").innerHTML = "None";
+    }
 }
-function parseYoutubeURL(URL){
-  if(URL !== ""){
-    var id = URL.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/i);
-    return id[1];
-  }
+function parseYoutubeURL(URL) {
+    if (URL !== "") {
+        var id = URL.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/i);
+        return id[1];
+    }
 }
-function updateState(){
-  document.getElementById('state').innerHTML = 'State: '+getVideoState();
+function updateState() {
+    document.getElementById('state').innerHTML = 'State: ' + getVideoState();
 }
-function getYTLink(){
+function getYTLink() {
     return document.getElementById("YTLinkBox").value;
 }
-function getRoomName(){
+function getRoomName() {
     return document.getElementById("RoomName").value;
 }
-function diePotato(){
-  player.loadVideoById({'videoId': 'fzirfZMWHyo',
-    'startSeconds': 9,
-    'endSeconds': 10,
-    'suggestedQuality': 'large'});
+function diePotato() {
+    player.loadVideoById({
+        'videoId': 'fzirfZMWHyo',
+        'startSeconds': 9,
+        'endSeconds': 10,
+        'suggestedQuality': 'large'
+    });
 }

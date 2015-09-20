@@ -29,6 +29,17 @@ app.use(express.static('../ClientSide/', {
  */
 //Todo put your server functions here
 
+
+
+//Returns roomdata from rooms array
+var getRoom = function(roomName){
+    for(var i = 0; i < rooms.length; i++){
+        if(rooms[i].name === roomName){
+            return rooms[i];
+        }
+    }
+};//Todo
+
 /*
 //Re-populates rooms object with pre-existing JSON rooms
 var restoreRooms = function(callback){

@@ -12,7 +12,8 @@
 
 
     socket.on('returnSong', function (data) {
-        if (data.length) {
+        if (data) {
+            loadYTID(data);
             document.getElementById('popped').textContent = 'Last Popped Song: ' + data;
         }
         else {
@@ -48,6 +49,7 @@ var pushSong = function () {
     var link = document.getElementById('YTLinkBox').value;
     document.getElementById('YTLinkBox').value = '';
     var roomname = document.getElementById("RoomName").value;
+    GLOBAL_ROOMNAME = roomname;
     var id = parseYoutubeURL(link);
     if (link.length && roomname.length)
         socket.emit('pushSong', {
@@ -59,7 +61,7 @@ var pushSong = function () {
 var popSong = function () {
     var roomName = document.getElementById("RoomName").value;
     if(roomName.length){
-        socket.emit('popSong');
+        socket.emit('popSong',roomName);
     }
 };
 
