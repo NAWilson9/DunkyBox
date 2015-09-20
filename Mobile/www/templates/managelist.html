@@ -25,7 +25,7 @@ navigation history that also transitions its views in and out.
         <button class="button icon ion-unlocked button-positive" ng-click="becomeModerator(room.roomName,room.roomPassword,modKey)"></button>
       </div>
       <div class="row">
-      <button class="button col col-50">Save</button><button class="button col col-50" ng-click="deleteRoom(room.roomName,room.adminKey)">Delete</button>
+      <div class="col col-33"></div><button class="button col col-33" ng-style="!permissions.admin && {'display':'none'}" ng-click="deleteRoom(room.roomName,room.adminKey)">Delete</button>
         </div>
     </div>
   </div>

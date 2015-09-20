@@ -100,6 +100,17 @@ app.run(function($ionicPlatform) {
 
   });
 });
+
+window.plugins.webintent.getExtra(window.plugins.webintent.EXTRA_TEXT,
+  function(url) {
+    // url is the value of EXTRA_TEXT
+    alert('getExtra: ' + url);
+    addSong(url);
+  }, function() {
+    // There was no extra supplied.
+  }
+);
+
 app.tracks= [
   {
     title: "BIC BOI",
@@ -229,7 +240,22 @@ $scope.createRoom = function(name){
 
 });
 
+socket.on('addSongHandler', function(data){
+  if(data.message){
+    $scope.showAlert(data.message);
+  }
+  else{
+
+  }
+});
+
+app.addSong = function(song){
+  socket.emit('addSong',app.room.roomName,app.room.roomPassword,song);
+};
+
 app.controller('queueController', function($scope) {
+
+  $scope.addSong = app.addSong;
 
   socket.on('addSongHandler', function(data){
     if(data.message){
@@ -325,6 +351,7 @@ app.controller('playerController', function($scope){
 
     }
   });
+  $scope.permissions = app.permissions;
 
   $scope.removeSong = function(index){
     socket.emit('removeSong',app.room.roomName,app.room.moderatorKey,index);
