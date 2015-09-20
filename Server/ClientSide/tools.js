@@ -10,9 +10,9 @@
         console.log(JSON.stringify(data));
     });
 
+
     socket.on('returnSong', function (data) {
         if (data.length) {
-            console.log(data);
             document.getElementById('popped').textContent = 'Last Popped Song: ' + data;
         }
         else {
@@ -44,13 +44,22 @@ var deleteTest = function(){
     socket.emit('deleteRoom', document.getElementById('hypea').value);
 };
 
-    var pushSong = function () {
-        var link = document.getElementById('hype1').value;
-        if (link.length)
-            socket.emit('pushSong', link);
-    };
+var pushSong = function () {
+    var link = document.getElementById('YTLinkBox').value;
+    document.getElementById('YTLinkBox').value = '';
+    var roomname = document.getElementById("RoomName").value;
+    var id = parseYoutubeURL(link);
+    if (link.length && roomname.length)
+        socket.emit('pushSong', {
+            "id" : id,
+            "roomName" : roomname
+        });
+};
 
 var popSong = function () {
-    socket.emit('popSong');
+    var roomName = document.getElementById("RoomName").value;
+    if(roomName.length){
+        socket.emit('popSong');
+    }
 };
 

@@ -57,63 +57,6 @@ var deleteRoom = function(roomName){
     })
 };
 
-//Updates room data
-var updateRoom = function(roomName, roomData){
-    //Checks that required data is there
-    if(!roomData.name){
-        console.error('Error: updateRoom : No room name specified.');
-        return;
-    } else if(!roomData.roomJoinPassword){
-        console.error('Error: updateRoom : No room join password specified.');
-        return;
-    } else if(!roomData.adminKey){
-        console.error('Error: updateRoom : No admin key specified.');
-        return;
-    } else if(!roomData.controlKey){
-        console.error('Error: updateRoom : No control key specified.');
-        return;
-    }
-    var updated = false;
-    for(var i = 0; i < rooms.length; i++){
-        if(rooms[i].name == roomName){
-            rooms[i] = roomData;
-            updated = true;
-        }
-    }
-    if(!updated){
-        console.error("Error: updateRoom: No room found with the room name \"" + roomName + "\".");
-        return;
-    }
-    saveRoomToFile(rooms[i]);
-};
-
-//Changes the guest password of the inputted roomName
-var changeRoomPassword = function(roomName, changedAttribute, attributeValue){
-    for(var i = 0; i < rooms.length; i++){
-        if(rooms[i].roomName == roomName){
-            switch(changedAttribute) {
-                case 'name':
-                    rooms[i].name = attributeValue;
-                    break;
-                case 'roomJoinPassword':
-                    rooms[i].roomJoinPassword = attributeValue;
-                    break;
-                case 'adminKey':
-                    rooms[i].adminKey = attributeValue;
-                    break;
-                case 'controlKey':
-                    rooms[i].controlKey = attributeValue;
-                    break;
-                default:
-                    console.error('Error: changeRoomAttribute: Improper attribute type "' + changedAttribute + '".');
-                    break;
-            }
-            saveRoomToFile(rooms[i]);
-        } else if(i == rooms.length - 1){
-            console.error('Error: changeRoomAttribute: No rooms found with the room name "' + roomName + '".');
-        }
-    }
-};
 
 //Reads a room from it's json file and returns it in an object
 var readRoomFile = function(roomName){
@@ -128,7 +71,14 @@ var readRoomFile = function(roomName){
 
 
 
-
+//Returns roomdata from rooms array
+var getRoom = function(roomName){
+    for(var i = 0; i < rooms.length; i++){
+        if(rooms[i].name === roomName){
+            return rooms[i];
+        }
+    }
+};
 
 //Handles the initial server setup before starting
 var initializeServer = function(functions, startServer) {
@@ -188,21 +138,26 @@ io.on('connection', function (socket) {
      ** Socket routes
      */
     socket.on('pushSong', function(data){
-        songData.roomKeys[0].queue.push(data);
-        socket.emit("updateCurList", songData.roomKeys[0].queue.toString());
-        console.log('Current list: ' + songData.roomKeys[0].queue.toString());
+        var room = getRoom(data.roomName);
+
+        if(room) {
+            room.playlist.push(data.id);
+            updateRoom(room.name, room);
+            socket.emit("updateCurList", getRoom(data.roomName).playlist.toString());
+        }
     });
 
-    socket.on('popSong', function(){
+    socket.on('popSong', function(roomName){
 
-        // if(songData.roomKeys[0].queue.length) {
-        socket.emit("returnSong", songData.roomKeys[0].queue.shift());
-        socket.emit("updateCurList", songData.roomKeys[0].queue.toString());
-        console.log('Current list: ' + songData.roomKeys[0].queue.toString());
-        /* }
-         else{
-         console.log('List empty!')
-         }*/
+        var room = getRoom(roomName);
+
+        if(room){
+            socket.emit("returnSong", room.playlist.shift());
+            socket.emit("updateCurList", room.playlist.toString());
+            console.log('Current list: ' + room.playlist.toString());
+
+            updateRoom(roomName, room);
+        }
     });
 
     socket.on('nickCity', function(data){
@@ -276,7 +231,7 @@ io.on('connection', function (socket) {
         //Persists the room to a JSON file
         saveRoomToFile(newRoom);
 
-        delete newRoom.playlist;
+        //delete newRoom.playlist;
         socket.emit('createRoomHandler', newRoom);
     };
 
@@ -298,4 +253,65 @@ io.on('connection', function (socket) {
         }
         return key;
     };
+
+    //Updates room data
+    var updateRoom = function(roomName, roomData){
+        var temp;
+        //Checks that required data is there
+        if(!roomData.name){
+            console.error('Error: updateRoom : No room name specified.');
+            return;
+        } else if(!roomData.roomJoinPassword){
+            console.error('Error: updateRoom : No room join password specified.');
+            return;
+        } else if(!roomData.adminKey){
+            console.error('Error: updateRoom : No admin key specified.');
+            return;
+        } else if(!roomData.controlKey){
+            console.error('Error: updateRoom : No control key specified.');
+            return;
+        }
+        var updated = false;
+        for(var i = 0; i < rooms.length; i++){
+            if(rooms[i].name === roomName){
+                rooms[i] = roomData;
+                temp = rooms[i];
+                updated = true;
+            }
+        }
+        if(!updated){
+            console.error("Error: updateRoom: No room found with the room name \"" + roomName + "\".");
+            return;
+        }
+        saveRoomToFile(temp);
+    };
+
+//Changes the guest password of the inputted roomName
+    var changeRoomPassword = function(roomName, changedAttribute, attributeValue){
+        for(var i = 0; i < rooms.length; i++){
+            if(rooms[i].roomName == roomName){
+                switch(changedAttribute) {
+                    case 'name':
+                        rooms[i].name = attributeValue;
+                        break;
+                    case 'roomJoinPassword':
+                        rooms[i].roomJoinPassword = attributeValue;
+                        break;
+                    case 'adminKey':
+                        rooms[i].adminKey = attributeValue;
+                        break;
+                    case 'controlKey':
+                        rooms[i].controlKey = attributeValue;
+                        break;
+                    default:
+                        console.error('Error: changeRoomAttribute: Improper attribute type "' + changedAttribute + '".');
+                        break;
+                }
+                saveRoomToFile(rooms[i]);
+            } else if(i == rooms.length - 1){
+                console.error('Error: changeRoomAttribute: No rooms found with the room name "' + roomName + '".');
+            }
+        }
+    };
+
 });

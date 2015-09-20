@@ -6,11 +6,13 @@
     <!-- Javascript dependencies -->
     <script src="./socket.io/socket.io.js"></script>
     <script>var socket = io.connect(window.location.origin);</script>
+    <script src="AudioPlayer.js"></script>
     <script src="tools.js"></script>
 </head>
 <br>
 <span>Enter the link to the song:</span>
-<input id="hype1" type="text">
+<input id="YTLinkBox" type="text" placeholder="Youtube Link">
+<input id="RoomName" type="text" placeholder="Room Name">
 <button id="hype2" onclick="pushSong()">Add</button>
 <button id="hype3" onclick="popSong()">Pop</button>
 <div>
@@ -32,7 +34,7 @@
     <span id="trash"></span>
 </div>
 </br>
-<span id="curlist">dasd</span>
+<span id="curlist"></span>
 </br>
 <span id="popped"></span>
 </body>
