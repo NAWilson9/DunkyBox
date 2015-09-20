@@ -62,9 +62,16 @@ var updateRoom = function(roomName, roomData){
         return;
     }
     saveRoomToFile(rooms[i]);
-};
+};//Todo
 
-
+//Returns roomdata from rooms array
+var getRoom = function(roomName){
+    for(var i = 0; i < rooms.length; i++){
+        if(rooms[i].name === roomName){
+            return rooms[i];
+        }
+    }
+};//Todo
 
 /*
 //Re-populates rooms object with pre-existing JSON rooms
@@ -99,17 +106,6 @@ var restoreRooms = function(callback){
     }
 };
 */
-
-
-
-//Returns roomdata from rooms array
-var getRoom = function(roomName){
-    for(var i = 0; i < rooms.length; i++){
-        if(rooms[i].name === roomName){
-            return rooms[i];
-        }
-    }
-};
 
 //Handles the initial server setup before starting
 var initializeServer = function(functions, startServer) {
@@ -152,13 +148,6 @@ var initializeServer = function(functions, startServer) {
 })();
 
 /*
-AJAX Routes
- */
-app.get('/someAddress',function(req, res){
-    console.log('knob');
-});
-
-/*
  Websocket stuff
  */
 io.on('connection', function (socket) {
@@ -176,7 +165,7 @@ io.on('connection', function (socket) {
             updateRoom(room.name, room);
             socket.emit("updateCurList", getRoom(data.roomName).playlist.toString());
         }
-    });
+    });//Todo
 
     socket.on('popSong', function(roomName){
 
@@ -189,11 +178,8 @@ io.on('connection', function (socket) {
 
             updateRoom(roomName, room);
         }
-    });
+    });//Todo
 
-    socket.on('nickCity', function(data){
-        console.log('HYPE: ' + data);
-    });
     socket.on('testRoom', function(data){
         console.log(JSON.stringify(rooms));
     });
@@ -290,7 +276,7 @@ io.on('connection', function (socket) {
     };
 
     //Changes the specified attribute of the inputted roomName
-    var changeRoomPassword = function(roomName, changedAttribute, attributeValue){
+    var changeRoomAttribute = function(roomName, changedAttribute, attributeValue){
         for(var i = 0; i < rooms.length; i++){
             if(rooms[i].roomName == roomName){
                 switch(changedAttribute) {
@@ -315,7 +301,7 @@ io.on('connection', function (socket) {
                 console.error('Error: changeRoomAttribute: No rooms found with the room name "' + roomName + '".');
             }
         }
-    };
+    };//Todo
 
     //A user has disconnected
     socket.on('disconnect', function (data) {
