@@ -14,6 +14,7 @@ var server;
 var port = 1337;
 var serverName = 'DunkyBox';
 var keyLength = 9;
+var roomSessionLocation = '/RoomSessions/';
 
 //Session setup
 var rooms = [];
@@ -104,14 +105,9 @@ io.on('connection', function (socket) {
     //On connection...
     console.log(new Date().toLocaleTimeString() + ' | A user has connected. IP Address: ' + socket.handshake.address +  ' Total users: ' + io.engine.clientsCount);
 
-    socket.on('testRoom', function(){
+    socket.on('printRooms', function(){
         console.log(JSON.stringify(rooms));
     });
-
-    /*var songS = {
-        'type': 'soundcloud',
-        'id': 'aedh0934y'
-    };*/
 
     //Receives a song object and adds it to the playlist
     socket.on('addSong', function(data){
@@ -139,62 +135,43 @@ io.on('connection', function (socket) {
         }
     });
 
-    //Returns the index to the room with the inputted name
-    var getRoomIndex = function(roomName){
-        var index;
+    //Returns the index to the room with the inputted name and password
+    var getRoomIndex = function(roomName, roomPassword, isAdmin){
+        var index = null;
         for(var i = 0; i < rooms.length; i++){
-            if(rooms[i].name === roomName){
-                index = i;
-                break;
+            if(rooms[i].roomName == roomName){
+                if(isAdmin){
+                    if(rooms[i].adminKey == roomPassword){
+                        index = i;
+                    } else {
+                        console.error('Error: getRoomIndex: Improper admin key, "' + roomPassword + '", supplied for the room "' + roomName +  '".');
+                    }
+                    break;
+                } else {
+                    if(rooms[i].roomPassword == roomPassword){
+                        index = i;
+                    } else {
+                        console.error('Error: getRoomIndex: Improper room password, "' + roomPassword + '", supplied for the room "' + roomName +  '".');
+                    }
+                    break;
+                }
+
             }
         }
-        return index;
-    };
-
-    //Endpoint for creating a room with the supplied room name
-    socket.on('createRoom', function(roomName){
-        if(!roomName && !roomName.length){
-            console.error('Error: Improper data provided for room creation.');
-            socket.emit('createRoomHandler', {'message': 'No data supplied.'});
-        } else {
-            createRoom(roomName);
+        if(index == null){
+            console.error('Error: getRoomIndex: No room found with the roomName "' + roomName + '".');
+        }  else {
+            return index;
         }
-    });
-
-    //Creates a new room with the inputted data
-    var createRoom = function(newRoomName){
-        //Makes sure room name is valid
-        if(!newRoomName || !newRoomName.length){
-            console.error('Error: createRoom : No room name specified.');
-            socket.emit('createRoomHandler', {'message':'No room name specified.'});
-            return;
-        }
-        //Checks if a room with the chosen name already exists
-        for(var i = 0; i < rooms.length; i++){
-            if(rooms[i].name == newRoomName){
-                console.error('Error: createRoom : A room with the name \"' + newRoomName + '\" already exists.');
-                socket.emit('createRoomHandler', {'message':'A room with that name already exists.'});
-                return;
-            }
-        }
-
-        var newRoom = {
-            'name': newRoomName,
-            'roomJoinPassword': keyGen(),
-            'adminKey': keyGen(),
-            'controlKey': keyGen(),
-            'playlist':[]
-        };
-        //Adds the room to the rooms array (stores it in memory)
-        rooms.push(newRoom);
-        //Persists the room to a JSON file
-        saveRoomToFile(newRoom);
-        socket.emit('createRoomHandler', newRoom);
     };
 
     //Saves a room as a JSON file in the RoomSessions folder
     var saveRoomToFile = function(room){
-        fs.writeFile(__dirname + '/RoomSessions/' + room.name + '.json', JSON.stringify(room, null, 4), function(err){
+        //Checks if the folder is present and makes it if it's not.
+        if (!fs.existsSync(__dirname + roomSessionLocation)){
+            fs.mkdirSync(__dirname + roomSessionLocation);
+        }
+        fs.writeFile(__dirname + roomSessionLocation + room.roomName + '.json', JSON.stringify(room, null, 4), function(err){
             if(err){
                 console.error('Error: saveRoomFile: ' + err);
             }
@@ -211,64 +188,117 @@ io.on('connection', function (socket) {
         return key;
     };
 
-    //Endpoint for deleting a room with the supplied room name
-    socket.on('deleteRoom', function(roomName){
-        if(!roomName || !roomName.length){
-            console.error('Error: No room name provided for room deletion.');
-            socket.emit('deleteRoomHandler', {'message': 'No room name supplied for room deletion.'});
-        } else{
-            deleteRoom(roomName);
+    //Endpoint for creating a room with the supplied room name
+    socket.on('createRoom', function(newRoomName){
+        //Makes sure room name is valid
+        if(!newRoomName || !newRoomName.length){
+            console.error('Error: createRoom : No room name specified.');
+            socket.emit('createRoomHandler', {'message':'No room name specified.'});
+            return;
         }
-    });
-
-    //Deletes the room from memory and and the filesystem with the inputted room name
-    var deleteRoom = function(roomName){
+        //Checks if a room with the chosen name already exists
         for(var i = 0; i < rooms.length; i++){
-            if(rooms[i].name == roomName){
-                rooms.splice(i, 1);
-            } else if(i == rooms.length - 1){
-                console.error('Error: deleteRoom: No room with the room name "' + roomName + '" was found.');
-                socket.emit('deleteRoomHandler', {'message':'Room was not found.'});
+            if(rooms[i].roomName == newRoomName){
+                console.error('Error: createRoom : A room with the name "' + newRoomName + '" already exists.');
+                socket.emit('createRoomHandler', {'message':'A room with the name "' + newRoomName + '" already exists.'});
                 return;
             }
         }
-        //Deletes the JSON file corresponding to the inputted room name
-        fs.unlink(__dirname + '/RoomSessions/' + roomName + '.json', function(err){
-            if(err){
-                console.error('Error: deleteRoom: ' + err);
-            } else{
-                socket.emit('deleteRoomHandler', true);
-            }
-        })
-    };
 
-    //Changes the specified attribute of the inputted roomName
-    var changeRoomAttribute = function(roomName, changedAttribute, attributeValue){
-        for(var i = 0; i < rooms.length; i++){
-            if(rooms[i].roomName == roomName){
-                switch(changedAttribute) {
-                    case 'name':
-                        rooms[i].name = attributeValue;
-                        break;
-                    case 'roomJoinPassword':
-                        rooms[i].roomJoinPassword = attributeValue;
-                        break;
-                    case 'adminKey':
-                        rooms[i].adminKey = attributeValue;
-                        break;
-                    case 'controlKey':
-                        rooms[i].controlKey = attributeValue;
-                        break;
-                    default:
-                        console.error('Error: changeRoomAttribute: Improper attribute type "' + changedAttribute + '".');
-                        break;
+        var newRoom = {
+            'roomName': newRoomName,
+            'roomPassword': keyGen(),
+            'adminKey': keyGen(),
+            'moderatorKey': keyGen(),
+            'playlist':[]
+        };
+        //Adds the room to the rooms array (stores it in memory)
+        rooms.push(newRoom);
+        //Persists the room to a JSON file
+        saveRoomToFile(newRoom);
+        socket.emit('createRoomHandler', newRoom);
+    });
+
+    //Endpoint for deleting a room with the supplied room name
+    socket.on('deleteRoom', function(roomName, adminKey){
+        if(!roomName || !roomName.length){
+            console.error('Error: deleteRoom: No room name provided for room deletion.');
+            socket.emit('deleteRoomHandler', {'message': 'No room name supplied for room deletion.'});
+        } else if (!adminKey || !adminKey.length){
+            console.error('Error: deleteRoom: No admin key provided for room deletion.');
+            socket.emit('deleteRoomHandler', {'message': 'No admin key supplied for room deletion.'});
+        }
+        var index = getRoomIndex(roomName, adminKey, true);
+        if(index != null){
+            //Remove from memory
+            rooms.splice(index, 1);
+            //Deletes the JSON file corresponding to the inputted room name
+            fs.unlink(__dirname + roomSessionLocation + roomName + '.json', function(err){
+                if(err){
+                    console.error('Error: deleteRoom: ' + err);
+                } else{
+                    socket.emit('deleteRoomHandler', true);
                 }
-                saveRoomToFile(rooms[i]);
-            } else if(i == rooms.length - 1){
-                console.error('Error: changeRoomAttribute: No rooms found with the room name "' + roomName + '".');
+            })
+        } else {
+            console.error('Error: deleteRoom: Unable to either find a room with the room name "' + roomName + '" or authenticate with the admin key "' + adminKey + '".');
+            socket.emit('deleteRoomHandler', {'message': 'Unable to either find a room with the room name "' + roomName + '" or authenticate with the admin key "' + adminKey + '".'});
+        }
+    });
+
+    //Endpoint for getting a new key for the desired for the supplied attributeType
+    socket.on('changeRoomAttribute', function(roomName, adminKey, attributeType){
+        var index = getRoomIndex(roomName, adminKey, true);
+        if(index != null){
+            var newKey = keyGen();
+            switch(attributeType) {
+                case 'roomPassword':
+                    rooms[index].roomPassword = newKey;
+                    break;
+                case 'moderatorKey':
+                    rooms[index].moderatorKey = newKey;
+                    break;
+                default:
+                    console.error('Error: changeRoomAttribute: Improper attribute type "' + attributeType + '".');
+                    socket.emit('changeRoomAttributeHandler', {'message': 'Improper attribute type "' + attributeType + '".'});
+                    break;
+            }
+            saveRoomToFile(rooms[index]);
+            socket.emit('changeRoomAttributeHandler', {'result': true, 'attributeType': attributeType, 'newValue': newKey});
+        } else{
+            console.error('Error: changeRoomAttribute: Unable to either find a room with the room name "' + roomName + '" or authenticate with the admin key "' + adminKey + '".');
+            socket.emit('changeRoomAttributeHandler', {'message': 'Unable to either find a room with the room name "' + roomName + '" or authenticate with the admin key "' + adminKey + '".'});
+        }
+    });
+
+    //Endpoint for determining if the user has the popper credentials for the inputted room name and room password
+    socket.on('joinRoom', function(roomPassword){
+        var found = false;
+        for(var i = 0; i < rooms.length; i++){
+            if(rooms[i].roomPassword == roomPassword){
+                socket.emit('joinRoomHandler', rooms[i].roomName);
+                found = true;
+                break;
             }
         }
-    };//Todo
+        if(!found){
+            console.error('Error: joinRoom: Unable to find a room with the room password "' + roomPassword + '".');
+            socket.emit('joinRoomHandler', {'message': 'Unable to find a room with the room password "' + roomPassword + '".'});
+        }
+    });
+
+    //Endpoint for attempting to upgrade user permissions to moderator level
+    socket.on('becomeModerator', function(roomName, roomPassword, moderatorKey){
+        var index = getRoomIndex(roomName, roomPassword);
+        if(index != null){
+            if(rooms[index].moderatorKey == moderatorKey){
+                socket.emit('becomeModeratorHandler', true);
+            } else {
+                console.error('Error: becomeModerator: Unable to authenticate with the moderatorKey "' + moderatorKey + '".');
+                socket.emit('becomeModeratorHandler', {'message': 'Unable to authenticate with the moderatorKey "' + moderatorKey + '".'});
+            }
+        }
+    });
 
     //A user has disconnected
     socket.on('disconnect', function () {

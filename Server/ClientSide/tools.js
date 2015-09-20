@@ -3,10 +3,22 @@
  */
 (function(){
     socket.on('createRoomHandler', function(data){
-        document.getElementById('1').innerHTML = data.name;
-        document.getElementById('2').innerHTML = data.roomJoinPassword;
+        document.getElementById('1').innerHTML = data.roomName;
+        document.getElementById('2').innerHTML = data.roomPassword;
         document.getElementById('3').innerHTML = data.adminKey;
-        document.getElementById('4').innerHTML = data.controlKey;
+        document.getElementById('4').innerHTML = data.moderatorKey;
+        console.log(JSON.stringify(data));
+    });
+    socket.on('deleteRoomHandler', function(data){
+        console.log(JSON.stringify(data));
+    });
+    socket.on('changeRoomAttributeHandler', function(data){
+        console.log(JSON.stringify(data));
+    });
+    socket.on('joinRoomHandler', function(data){
+        console.log(JSON.stringify(data));
+    });
+    socket.on('becomeModeratorHandler', function(data){
         console.log(JSON.stringify(data));
     });
 
@@ -20,8 +32,6 @@
             document.getElementById('popped').innerHTML = 'Last Popped Song: None. (Empty List)';
         }
     });
-
-
     socket.on('updateCurList', function (data) {
         if (data.length) {
             console.log(data);
@@ -33,14 +43,34 @@
     });
 })();
 
-var testerino = function(){
+var createRoom = function(){
     socket.emit('createRoom', document.getElementById('hypea').value);
 };
-var test = function(){
-    socket.emit('testRoom');
+var printRooms = function(){
+    socket.emit('printRooms');
 };
-var deleteTest = function(){
-    socket.emit('deleteRoom', document.getElementById('hypea').value);
+var deleteRoom = function(){
+    socket.emit('deleteRoom', document.getElementById('hypea').value, document.getElementById('hypeb').value);
+};
+var changeRoom = function(type){
+    var roomName = document.getElementById('hypea').value;
+    var adminKey = document.getElementById('hypeb').value;
+    if(type == 'pass'){
+        socket.emit('changeRoomAttribute', roomName, adminKey, 'roomPassword');
+    } else {
+        socket.emit('changeRoomAttribute', roomName, adminKey, 'moderatorKey');
+    }
+};
+var login = function(){
+    var roomName = document.getElementById('hypea').value;
+    var roomPassword = document.getElementById('hypec').value;
+    socket.emit('joinRoom', roomName, roomPassword);
+};
+var becomeModerator = function(){
+    var roomName = document.getElementById('hypea').value;
+    var roomPassword = document.getElementById('hypec').value;
+    var moderatorKey = document.getElementById('hyped').value;
+    socket.emit('becomeModerator', roomName, roomPassword, moderatorKey);
 };
 
 var addSong = function () {
@@ -60,7 +90,6 @@ var addSong = function () {
             "song": song
         });
 };
-
 var removeSong = function () {
     var roomName = document.getElementById("RoomName").value;
     if(roomName.length){
