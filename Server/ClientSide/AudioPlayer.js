@@ -2,87 +2,163 @@
  * Created by cmbranc on 9/19/15.
  */
 
-
-
-var GLOBAL_ROOMNAME = '';
-var songLoaded = false;
-
-//g2g
 var tag = document.createElement('script');
 tag.src = "https://www.youtube.com/iframe_api";
 var firstScriptTag = document.getElementsByTagName('script')[0];
 firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+
+var queue = [
+    'http://www.youtube.com/watch?v=gvdf5n-zI14',
+    //'https://www.youtube.com/watch?v=Cvcc9GRg4wc',
+    //'https://api.soundcloud.com/tracks/209374048.json?client_id=41fd4e987be5cc2b550dae26aff9e2b8'
+    'https://api.soundcloud.com/tracks/19462589.json?client_id=41fd4e987be5cc2b550dae26aff9e2b8'
+];
+
+// youtube = 0
+// soundcloud = 1
+var currentSource = 0;
+var paused = false;
+
+// youtube
 var player;
+// sc
+var sound;
+
+
+
+function pausePlayback(){
+    switch(currentSource){
+        case 0:
+            player.pauseVideo();
+            break;
+        case 1:
+            sound.pause();
+            break;
+        default:
+            return;
+    }
+    paused = true;
+}
+
+function resumePlayback(){
+    switch(currentSource){
+        case 0:
+            player.playVideo();
+            break;
+        case 1:
+            sound.play();
+            break;
+        default:
+            return;
+    }
+    paused = false;
+}
+
+function playNextSong(){
+    pausePlayback();// TODO reenable
+    var next = queue.shift();
+    queue.push(next);
+    goToNextVideo(next);
+}
+
+
 function onYouTubeIframeAPIReady() {
+    console.log('iframe ready');
     player = new YT.Player('player', {
         height: '0',
         width: '0',
-        videoId: 'M7lc1UVf-VE',
+        //videoId: 'Cvcc9GRg4wc',
         events: {
-            'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange
+            'onReady': function(event) {
+                console.log('player ready');
+                //event.target.playVideo();
+                playNextSong();
+            },
+            'onStateChange': function(event){
+                console.log(event);
+                if(event.data == 0){
+                    console.log('hi');
+                    playNextSong();
+                }
+            },
+            'onError': function(){
+                console.error("ERROR", arguments);
+            }
         }
     });
+    console.log(player);
 }
 
-function onPlayerReady(event) {
-    event.target.playVideo();
-}
 
-var done = false;
-function onPlayerStateChange(event) {
-    if (event.data == YT.PlayerState.PLAYING && !done) {
-        setTimeout(stopVideo, 6000);
-        done = true;
+
+// takes url for youtube or soundcloud
+function goToNextVideo(url){
+    var target = parseYoutubeURL(url);
+    if(target){
+        console.log('next video, youtoob');
+        currentSource = 0;
+        player.loadVideoById(target, 0, 'small');
+        player.playVideo();
     }
-}
-function stopVideo() {
-    player.stopVideo();
-}
-function pauseVideo() {
-    player.pauseVideo();
-}
-function playVideo() {
-    player.playVideo();
-}
-
-
-
-function getVideoState() {
-    return player.getPlayerState();
-}
-function loadYTLink() {
-    var id = parseURL(getYTLink());
-    GLOBAL_ROOMNAME = getRoomName();
-    if (id.length) {
-        player.loadVideoById(id, 0, "large");
-    }
-}
-function loadYTID(id){
-    if (id.length) {
-        player.loadVideoById(id, 0, "large");
+    else{
+        target = parseSoundcloudURL(url);
+        if(target){
+            console.log('sc', target);
+            currentSource = 1;
+            SC.stream(target, function (s) {
+                sound = s;
+                console.log('cb', sound);
+                sound.play({
+                    onfinish: function () {
+                        console.log('finished soundcloud song');
+                        // TODO go to next
+                        goToNextVideo();
+                    }
+                });
+            });
+        }
+        else{
+            console.error('fuuuuuck');
+        }
     }
 }
 
 
-function parseYoutubeURL(URL) {
-    if (URL !== "") {
-        var id = URL.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/i);
-        return id[1];
+
+
+
+function parseYoutubeURL(url) {
+    if (url !== "") {
+        var id = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/i);
+        if(id && id.length) {
+            console.log(id);
+            return id[1];
+        }
     }
+    return false;
 }
 
-function getYTLink() {
-    return document.getElementById("YTLinkBox").value;
+
+function parseSoundcloudURL(url){
+    //https://api.soundcloud.com/tracks/209374048.json?client_id=41fd4e987be5cc2b550dae26aff9e2b8
+    var id = url.match(/.*soundcloud\.com\/(.*)\/(\d*).*/i);
+    console.log(id);
+    if(id && id.length && id.length>1){
+        return 'https://api.soundcloud.com/'+id[1]+'/'+id[2];
+    }
+    return false;
 }
-function getRoomName() {
-    return document.getElementById("RoomName").value;
-}
-function diePotato() {
-    player.loadVideoById({
-        'videoId': 'fzirfZMWHyo',
-        'startSeconds': 9,
-        'endSeconds': 10,
-        'suggestedQuality': 'large'
-    });
-}
+
+
+
+
+
+
+//Authenticates the user
+SC.initialize({
+    client_id: '41fd4e987be5cc2b550dae26aff9e2b8'
+});
+
+
+
