@@ -12,15 +12,21 @@ navigation history that also transitions its views in and out.
       <div class="item">
         {{room.roomName}}
       </div>
-      <div class="item item-button-right">{{room.roomPassword}}
+      <div class="item item-button-right item-stacked-label">
+        <span class="input-label">Room Password</span>
+        {{room.roomPassword}}
         <button class="button button-positive icon ion-ios-reload" ng-style="!permissions.admin && {'display':'none'}" ng-click="changeRoomAttribute(room.roomName,room.adminKey,'roomPassword')"></button>
       </div>
-      <div class="item item-button-right" ng-style="!permissions.admin && {'display':'none'}">{{room.adminKey}}
+      <div class="item item-button-right item-stacked-label" ng-style="!permissions.admin && {'display':'none'}">
+        <span class="input-label">Admin Key</span>
+        {{room.adminKey}}
       </div>
-      <div class="item item-button-right" ng-style="!permissions.mod && {'display':'none'}">{{room.moderatorKey}}
+      <div class="item item-button-right item-stacked-label" ng-style="!permissions.mod && {'display':'none'}">
+        <span class="input-label">Moderator Key</span>
+        {{room.moderatorKey}}
         <button class="button button-positive icon ion-ios-reload" ng-click="changeRoomAttribute(room.roomName,room.adminKey,'moderatorKey')" ng-style="!permissions.admin && {'display':'none'}"></button>
       </div>
-      <div class="item item-button-right" ng-style="permissions.mod && {'display':'none'}">
+      <div class="item item-button-right item-stacked-label" ng-style="permissions.mod && {'display':'none'}">
         <input class="col col-75" ng-model="modKey" type="text" placeholder="Moderator Key">
         <button class="button icon ion-unlocked button-positive" ng-click="becomeModerator(room.roomName,room.roomPassword,modKey)"></button>
       </div>
