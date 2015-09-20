@@ -6,6 +6,8 @@
 var express = require('express');
 var sockets = require('socket.io');
 var fs = require('fs');
+var cheerio = require('cheerio');
+var request = require('request');
 
 //Setup server
 var app = express();
@@ -24,39 +26,88 @@ app.use(express.static('../ClientSide/', {
     index: 'client.html'
 }));
 
-/*
-//Re-populates rooms object with pre-existing JSON rooms
-var restoreRooms = function(callback){
-    var files;
-    var total;
-    var cb = function(err, data){
-        if(err){
-            console.error('Error: restoreRooms: ' + err);
-        } else {
-            files = data;
-            total = data.length;
+var addYoutubeSong = function(link, index){
+    request(link, function(error, response, html) {
+        if(error || response.statusCode != 200){
+            console.error('Error: scrapeYoutube: There was a problem getting the web page.' + error);
+            return null;
+        } else{
+            var $ = cheerio.load(html);
+            var info = $('#watch7-content');
+            var title = info.find('#eow-title').text();
+            var thumbnail = info.find('link[itemprop="thumbnailUrl"]').attr('href');
+            return {
+                'type': 'youtube',
+                'title': title,
+                'artist': '',
+                'thumbnail': thumbnail,
+                'url': link
+            };
         }
-    };
-    //Get's the list of files
-    fs.readdir(__dirname + '/RoomSessions/', cb);
-    //Reads each file and create the object in memory
-    if(total > 0){
-        for(var i = 0; i < files.length; i++){
-            fs.readFile(files[i], function(err, data){
-                if(err){
-                    console.error('Error: restoreRooms: ' + err);
+    });
+};
+
+
+
+//Returns the index to the room with the inputted name and password
+var getRoomIndex = function(roomName, roomPassword, isAdmin, isModerator){
+    var index = null;
+    for(var i = 0; i < rooms.length; i++){
+        if(rooms[i].roomName == roomName){
+            if(isAdmin){
+                if(rooms[i].adminKey == roomPassword){
+                    index = i;
                 } else {
-                    rooms.push(data);
-                    total--;
-                    if(total == 0){
-                        callback();
-                    }
+                    console.error('Error: getRoomIndex: Improper admin key, "' + roomPassword + '", supplied for the room "' + roomName +  '".');
                 }
-            })
+                break;
+            } else if(isModerator){
+                if(rooms[i].moderatorKey == roomPassword){
+                    index = i;
+                } else {
+                    console.error('Error: getRoomIndex: Improper moderator key, "' + roomPassword + '", supplied for the room "' + roomName +  '".');
+                }
+                break;
+            } else {
+                if(rooms[i].roomPassword == roomPassword){
+                    index = i;
+                } else {
+                    console.error('Error: getRoomIndex: Improper room password, "' + roomPassword + '", supplied for the room "' + roomName +  '".');
+                }
+                break;
+            }
+
         }
     }
+    if(index == null){
+        console.error('Error: getRoomIndex: No room found with the roomName "' + roomName + '".');
+    }  else {
+        return index;
+    }
 };
-*/
+
+//Saves a room as a JSON file in the RoomSessions folder
+var saveRoomToFile = function(room){
+    //Checks if the folder is present and makes it if it's not.
+    if (!fs.existsSync(__dirname + roomSessionLocation)){
+        fs.mkdirSync(__dirname + roomSessionLocation);
+    }
+    fs.writeFile(__dirname + roomSessionLocation + room.roomName + '.json', JSON.stringify(room, null, 4), function(err){
+        if(err){
+            console.error('Error: saveRoomFile: ' + err);
+        }
+    })
+};
+
+//Generates a random key and returns it
+var keyGen = function(){
+    var key = "";
+    var possible = "abcdefghijklmnopqrstuvwxyz0123456789";
+    for(var i = 0; i < keyLength; i++ ){
+        key += possible[Math.floor(Math.random() * possible.length)];
+    }
+    return key;
+};
 
 //Handles the initial server setup before starting
 var initializeServer = function(functions, startServer) {
@@ -110,83 +161,118 @@ io.on('connection', function (socket) {
     });
 
     //Receives a song object and adds it to the playlist
-    socket.on('addSong', function(data){
-        var index = getRoomIndex(data.roomName);
+    socket.on('addSong', function(roomName, roomPassword, link){
+        var index = getRoomIndex(roomName, roomPassword);
         if(index != null){
-            rooms[index].playlist.push(data.song);
-            saveRoomToFile(rooms[index]);
+            if(link.indexOf('youtube') > -1){
+                console.log('youtube');
+                rooms[index].playlist.push(addYoutubeSong(link));
+            } else if (link.indexOf('soundcloud') > -1){
+                console.log('soundcloud');
+                console.log('Better luck next time, kid.');
+            }
+            //saveRoomToFile(rooms[index]);
             socket.emit('addSongHandler', true);
         } else {
-            console.error('Error: Improper or no room name specified.');
-            socket.emit('addSongHandler', 'Improper or no room name specified.');
+            console.error('Error: addSong: Improper or no room name specified.');
+            socket.emit('addSongHandler', {'message': 'Improper or no room name specified.'});
         }
     });
 
-    //Removes the first song in the playlist of the room specified
-    socket.on('removeSong', function(roomName){
-        var index = getRoomIndex(roomName);
+    //Removes the song at the index inputted
+    socket.on('removeSong', function(roomName, moderatorKey, songIndex){
+        var index = getRoomIndex(roomName, moderatorKey);
         if(index != null){
-            rooms[index].playlist.shift();
-            saveRoomToFile(rooms[index]);
-            socket.emit('removeSongHandler', true);
+            if(songIndex >= rooms[index].playlist.length){
+                console.error('Error: removeSong: The supplied index is larger than the length of the playlist.');
+                socket.emit('removeSongHandler', {'message': 'The supplied index is larger than the length of the playlist.'});
+            } else {
+                rooms[index].playlist.splice(songIndex, 1);
+                //saveRoomToFile(rooms[index]);
+                socket.emit('removeSongHandler', true);
+            }
         } else {
-            console.error('Error: Improper or no room name specified.');
-            socket.emit('removeSongHandler', 'Improper or no room name specified.');
+            console.error('Error: removeSong: Unable to either find a room with the room name "' + roomName + '" or authenticate with the room password "' + roomPassword + '".');
+            socket.emit('removeSongHandler', {'message': 'Unable to either find a room with the room name "' + roomName + '" or authenticate with the room password "' + roomPassword + '".'});
         }
     });
 
-    //Returns the index to the room with the inputted name and password
-    var getRoomIndex = function(roomName, roomPassword, isAdmin){
-        var index = null;
-        for(var i = 0; i < rooms.length; i++){
-            if(rooms[i].roomName == roomName){
-                if(isAdmin){
-                    if(rooms[i].adminKey == roomPassword){
-                        index = i;
-                    } else {
-                        console.error('Error: getRoomIndex: Improper admin key, "' + roomPassword + '", supplied for the room "' + roomName +  '".');
-                    }
-                    break;
-                } else {
-                    if(rooms[i].roomPassword == roomPassword){
-                        index = i;
-                    } else {
-                        console.error('Error: getRoomIndex: Improper room password, "' + roomPassword + '", supplied for the room "' + roomName +  '".');
-                    }
-                    break;
+    //Returns an array of the next x amount of songs
+    socket.on('getSongList', function(roomName, roomPassword, nextAmount){
+        var index = getRoomIndex(roomName, roomPassword);
+        if(index != null){
+            var playlist = rooms[index].playlist;
+            if(!playlist.length){
+                socket.emit('getSongListHandler', {'message': 'The playlist is empty.'});
+            } else {
+                var songList = [];
+                for(var i = 0, len = Math.min(nextAmount, playlist.length); i < len; i++){
+                    songList.push(playlist[i]);
                 }
-
+                socket.emit('getSongListHandler', songList);
             }
+        } else {
+            console.error('Error: getSongList: Unable to either find a room with the room name "' + roomName + '" or authenticate with the room password "' + roomPassword + '".');
+            socket.emit('getSongListHandler', {'message': 'Unable to either find a room with the room name "' + roomName + '" or authenticate with the room password "' + roomPassword + '".'});
         }
-        if(index == null){
-            console.error('Error: getRoomIndex: No room found with the roomName "' + roomName + '".');
-        }  else {
-            return index;
-        }
-    };
+    });
 
-    //Saves a room as a JSON file in the RoomSessions folder
-    var saveRoomToFile = function(room){
-        //Checks if the folder is present and makes it if it's not.
-        if (!fs.existsSync(__dirname + roomSessionLocation)){
-            fs.mkdirSync(__dirname + roomSessionLocation);
-        }
-        fs.writeFile(__dirname + roomSessionLocation + room.roomName + '.json', JSON.stringify(room, null, 4), function(err){
-            if(err){
-                console.error('Error: saveRoomFile: ' + err);
+    //Modifies the songs rating weight
+    socket.on('rateSong', function(roomName, roomPassword, songIndex, rating){
+        var index = getRoomIndex(roomName, roomPassword);
+        if(index != null){
+            var playlist = rooms[index].playlist;
+            if(!playlist.length){
+                //saveRoomToFile(rooms[index]);
+                socket.emit('rateSongHandler', {'message': 'The playlist is empty.'});
+            } else {
+                playlist[songIndex].songWeight += rating;
+                socket.emit('rateSongHandler', true);
             }
-        })
-    };
-
-    //Generates a random key and returns it
-    var keyGen = function(){
-        var key = "";
-        var possible = "abcdefghijklmnopqrstuvwxyz0123456789";
-        for(var i = 0; i < keyLength; i++ ){
-            key += possible[Math.floor(Math.random() * possible.length)];
+        } else {
+            console.error('Error: rateSong: Unable to either find a room with the room name "' + roomName + '" or authenticate with the room password "' + roomPassword + '".');
+            socket.emit('rateSongHandler', {'message': 'Unable to either find a room with the room name "' + roomName + '" or authenticate with the room password "' + roomPassword + '".'});
         }
-        return key;
-    };
+    });
+
+    //Increments the song index and returns the next song
+    socket.on('nextSong', function(roomName, roomPassword){
+        var index = getRoomIndex(roomName, roomPassword);
+        if(index != null){
+            rooms[index].playlist.push(rooms[index].playlist.shift());
+            //saveRoomToFile(rooms[index]);
+            socket.emit('nextSongHandler', rooms[index].playlist[0]);
+        } else {
+            console.error('Error: nextSong: Unable to either find a room with the room name "' + roomName + '" or authenticate with the room password "' + roomPassword + '".');
+            socket.emit('nextSongHandler', {'message': 'Unable to either find a room with the room name "' + roomName + '" or authenticate with the room password "' + roomPassword + '".'});
+        }
+    });
+
+    //Increments the song index and returns the next song
+    socket.on('nextSong', function(roomName, roomPassword){
+        var index = getRoomIndex(roomName, roomPassword);
+        if(index != null){
+            rooms[index].playlist.push(rooms[index].playlist.shift());
+            //saveRoomToFile(rooms[index]);
+            socket.emit('nextSongHandler', rooms[index].playlist[0]);
+        } else {
+            console.error('Error: nextSong: Unable to either find a room with the room name "' + roomName + '" or authenticate with the room password "' + roomPassword + '".');
+            socket.emit('nextSongHandler', {'message': 'Unable to either find a room with the room name "' + roomName + '" or authenticate with the room password "' + roomPassword + '".'});
+        }
+    });
+
+    //Decrements the song index and returns the next song
+    socket.on('previousSong', function(roomName, roomPassword){
+        var index = getRoomIndex(roomName, roomPassword);
+        if(index != null){
+            rooms[index].playlist.unshift(rooms[index].playlist.pop());
+            //saveRoomToFile(rooms[index]);
+            socket.emit('previousSongHandler', rooms[index].playlist[0]);
+        } else {
+            console.error('Error: previousSong: Unable to either find a room with the room name "' + roomName + '" or authenticate with the room password "' + roomPassword + '".');
+            socket.emit('previousSongHandler', {'message': 'Unable to either find a room with the room name "' + roomName + '" or authenticate with the room password "' + roomPassword + '".'});
+        }
+    });
 
     //Endpoint for creating a room with the supplied room name
     socket.on('createRoom', function(newRoomName){
@@ -215,7 +301,7 @@ io.on('connection', function (socket) {
         //Adds the room to the rooms array (stores it in memory)
         rooms.push(newRoom);
         //Persists the room to a JSON file
-        saveRoomToFile(newRoom);
+        //saveRoomToFile(newRoom);
         socket.emit('createRoomHandler', newRoom);
     });
 
@@ -263,7 +349,7 @@ io.on('connection', function (socket) {
                     socket.emit('changeRoomAttributeHandler', {'message': 'Improper attribute type "' + attributeType + '".'});
                     break;
             }
-            saveRoomToFile(rooms[index]);
+            //saveRoomToFile(rooms[index]);
             socket.emit('changeRoomAttributeHandler', {'result': true, 'attributeType': attributeType, 'newValue': newKey});
         } else{
             console.error('Error: changeRoomAttribute: Unable to either find a room with the room name "' + roomName + '" or authenticate with the admin key "' + adminKey + '".');
