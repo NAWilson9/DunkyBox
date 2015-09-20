@@ -88,7 +88,7 @@ app.run(function($ionicPlatform) {
           function(url) {
             // url is the value of EXTRA_TEXT
             alert('getExtra: ' + url);
-            addSong(url);
+            app.addSong(url);
           }, function() {
             // There was no extra supplied.
           }
