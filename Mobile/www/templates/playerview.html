@@ -18,16 +18,15 @@ navigation history that also transitions its views in and out.
       </div>
 
       <div class="item item-image">
-        <img src="{{playing.albumart}}">
+        <img src="{{playing.thumbnail}}">
       </div>
       <div class="button-bar"><a class="button icon ion-skip-backward" ng-style="(!permissions.admin && !permissions.mod) && {'display':'none'}"></a>
-        <a class="button icon ion-play" ng-style="(!permissions.admin && !permissions.mod) && {'display':'none'}"></a>
+        <a class="button icon ion-play" ng-style="(!permissions.admin && !permissions.mod) && {'display':'none'}" ng-click="playSong(playing.url)"></a>
         <a class="button icon ion-skip-forward" ng-style="(!permissions.admin && !permissions.mod) && {'display':'none'}"></a>
         <a class="button icon ion-trash-a" ng-style="(!permissions.admin && !permissions.mod) && {'display':'none'}"></a>
         <a class="button icon ion-thumbsup"></a>
         <a class="button icon ion-thumbsdown"></a>
       </div>
-
     </div>
   </div>
 </ion-view>

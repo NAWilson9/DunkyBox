@@ -88,6 +88,7 @@ app.run(function($ionicPlatform) {
           function(url) {
             // url is the value of EXTRA_TEXT
             alert('getExtra: ' + url);
+            addSong(url);
           }, function() {
             // There was no extra supplied.
           }
@@ -100,16 +101,6 @@ app.run(function($ionicPlatform) {
 
   });
 });
-
-window.plugins.webintent.getExtra(window.plugins.webintent.EXTRA_TEXT,
-  function(url) {
-    // url is the value of EXTRA_TEXT
-    alert('getExtra: ' + url);
-    addSong(url);
-  }, function() {
-    // There was no extra supplied.
-  }
-);
 
 app.tracks= [
   {
@@ -136,11 +127,12 @@ app.playing = app.tracks[app.playingIndex];
 
 app.controller('roomController', function($scope, $ionicPopup, $location) {
   $scope.goNext = function(hash){$location.path(hash).replace();
-  $scope.$apply();}
+  $scope.$apply();};
 
   $scope.room = app.room;
   $scope.permissions = app.permissions;
 
+  socket = io('http://10.26.41.108:1337');
   socket.on('becomeModeratorHandler',function(data){
     if(data.message){
       $scope.showAlert(data.message);
@@ -240,21 +232,20 @@ $scope.createRoom = function(name){
 
 });
 
-socket.on('addSongHandler', function(data){
-  if(data.message){
-    $scope.showAlert(data.message);
-  }
-  else{
-
-  }
-});
-
 app.addSong = function(song){
   socket.emit('addSong',app.room.roomName,app.room.roomPassword,song);
 };
 
 app.controller('queueController', function($scope) {
 
+  socket.on('addSongHandler', function(data){
+    if(data.message){
+      $scope.showAlert(data.message);
+    }
+    else{
+
+    }
+  });
   $scope.addSong = app.addSong;
 
   socket.on('addSongHandler', function(data){
@@ -284,12 +275,12 @@ app.controller('queueController', function($scope) {
   };
 
   socket.on('getSongListHandler',function(data){
+    console.log(data);
     if(data.message){
       $scope.showAlert(data.message);
     }
     else{
-      $scope.tracks = data.songList;
-      console.log(songList);
+      $scope.tracks = data;
       $scope.$apply();
     }
   });
@@ -307,6 +298,7 @@ app.controller('queueController', function($scope) {
     });
   };
   $scope.getSongList(15);
+  $scope.permissions = app.permissions;
 });
 
 app.controller('homeController', function($scope){
@@ -342,7 +334,7 @@ app.controller('homeController', function($scope){
 
 });
 
-app.controller('playerController', function($scope){
+app.controller('playerController', function($scope, $ionicPopup){
   socket.on('removeSongHandler', function(data){
     if(data.message){
       $scope.showAlert(data.message);
@@ -358,12 +350,13 @@ app.controller('playerController', function($scope){
   };
 
   socket.on('getSongListHandler',function(data){
+    console.log(JSON.stringify(data));
     if(data.message){
       $scope.showAlert(data.message);
     }
     else{
-      $scope.playing = data.songList[0];
-      console.log(songList);
+      $scope.playing = data[0];
+      console.log(data.songList);
       $scope.$apply();
     }
   });
@@ -381,4 +374,12 @@ app.controller('playerController', function($scope){
     });
   };
   $scope.getSongList(1);
+
+
+
+  $scope.playSong = function(url){
+    queue.push(url);
+    playNextSong();
+  };
+
 });
