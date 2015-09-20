@@ -387,4 +387,10 @@ app.controller('playerController', function($scope, $ionicPopup){
     playNextSong();
   };
 
+    $scope.nextSong = playNextSong;
+
+    $scope.pauseSong = pausePlayback;
+
+    $scope.resumeSong = resumePlayback;
+
 });
