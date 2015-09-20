@@ -13,7 +13,7 @@ var io = sockets();
 var server;
 var port = 1337;
 var serverName = 'DunkyBox';
-var keyLength = 8;
+var keyLength = 9;
 
 //Session setup
 var rooms = [];
@@ -34,40 +34,71 @@ app.use(express.static('../ClientSide/', {
  */
 //Todo put your server functions here
 
-
-
-//Deletes the room with the inputted room name
-var deleteRoom = function(roomName){
-    var deleted = false;
-    for(var i = 0; i < rooms.length; i++){
-          if(rooms[i].name == roomName){
-              rooms.splice(i, 1);
-              deleted = true;
-          }
-    }
-    if(!deleted){
-        console.error("Error: deleteRoom: No room found with the room name \"" + roomName + "\".");
+//Updates room data
+var updateRoom = function(roomName, roomData){
+    //Checks that required data is there
+    if(!roomData.name){
+        console.error('Error: updateRoom : No room name specified.');
+        return;
+    } else if(!roomData.roomJoinPassword){
+        console.error('Error: updateRoom : No room join password specified.');
+        return;
+    } else if(!roomData.adminKey){
+        console.error('Error: updateRoom : No admin key specified.');
+        return;
+    } else if(!roomData.controlKey){
+        console.error('Error: updateRoom : No control key specified.');
         return;
     }
-    //Deletes the JSON file corresponding to the inputted room name
-    fs.unlink(__dirname + '/RoomSessions/' + roomName + '.json', function(err){
-        if(err){
-            console.error('Error: deleteRoom: ' + err);
+    var updated = false;
+    for(var i = 0; i < rooms.length; i++){
+        if(rooms[i].name == roomName){
+            rooms[i] = roomData;
+            updated = true;
         }
-    })
+    }
+    if(!updated){
+        console.error("Error: updateRoom: No room found with the room name \"" + roomName + "\".");
+        return;
+    }
+    saveRoomToFile(rooms[i]);
 };
 
 
-//Reads a room from it's json file and returns it in an object
-var readRoomFile = function(roomName){
-    fs.readFile('/RoomSessions/' + roomName + '.json', function(err, data){
+
+/*
+//Re-populates rooms object with pre-existing JSON rooms
+var restoreRooms = function(callback){
+    var files;
+    var total;
+    var cb = function(err, data){
         if(err){
-            console.log(err);
+            console.error('Error: restoreRooms: ' + err);
         } else {
-            return data;
+            files = data;
+            total = data.length;
         }
-    })
+    };
+    //Get's the list of files
+    fs.readdir(__dirname + '/RoomSessions/', cb);
+    //Reads each file and create the object in memory
+    if(total > 0){
+        for(var i = 0; i < files.length; i++){
+            fs.readFile(files[i], function(err, data){
+                if(err){
+                    console.error('Error: restoreRooms: ' + err);
+                } else {
+                    rooms.push(data);
+                    total--;
+                    if(total == 0){
+                        callback();
+                    }
+                }
+            })
+        }
+    }
 };
+*/
 
 
 
@@ -103,7 +134,7 @@ var initializeServer = function(functions, startServer) {
 //Starts the server
 (function(){
     //Link required startup methods
-    var functions = [];//Todo add startup dependent functions here
+    var functions = [restoreRooms];//Todo add startup dependent functions here
 
     //What to do once initialization finishes
     var start = function(){
@@ -163,47 +194,22 @@ io.on('connection', function (socket) {
     socket.on('nickCity', function(data){
         console.log('HYPE: ' + data);
     });
-
-
-
     socket.on('testRoom', function(data){
         console.log(JSON.stringify(rooms));
     });
 
-    socket.on('deleteRoom', function(data){
-        if(!data || !data.length){
-            console.log('Error: Improper data provided for room deletion.');
-            //Todo Return error to host
-        }
-        deleteRoom(data);
-        //Todo return confirmation?
-    });
-
-    socket.on('changeRoomPassword', function(data){
-        if(!dagta || !data.length){
-            console.log("Error: Improper data provided for room password change.");
-            //Todo Return error to host
-        }
-        changeRoomPassword(data.roomName, data.roomPassword);
-    });
-
-    //A user has disconnected
-    socket.on('disconnect', function (data) {
-        console.log(new Date().toLocaleTimeString() + ' | A user has disconnected. Total users: ' + io.engine.clientsCount);
-    });
-
-    //Host has requested to create a room
-    socket.on('createRoom', function(data){
-        if(!data && !data.length){
+    //Endpoint for creating a room with the supplied room name
+    socket.on('createRoom', function(roomName){
+        if(!roomName && !roomName.length){
             console.error('Error: Improper data provided for room creation.');
-            socket.emit('createRoomHandler', {'message':'No data supplied.'});
+            socket.emit('createRoomHandler', {'message': 'No data supplied.'});
         } else {
-            createRoom(data);
+            createRoom(roomName);
         }
     });
 
     //Creates a new room with the inputted data
-    var createRoom = function(newRoomName, callback){
+    var createRoom = function(newRoomName){
         //Makes sure room name is valid
         if(!newRoomName || !newRoomName.length){
             console.error('Error: createRoom : No room name specified.');
@@ -230,8 +236,6 @@ io.on('connection', function (socket) {
         rooms.push(newRoom);
         //Persists the room to a JSON file
         saveRoomToFile(newRoom);
-
-        //delete newRoom.playlist;
         socket.emit('createRoomHandler', newRoom);
     };
 
@@ -247,46 +251,45 @@ io.on('connection', function (socket) {
     //Generates a random key and returns it
     var keyGen = function(){
         var key = "";
-        var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        for( var i = 0; i < keyLength; i++ ) {
-            key += possible.charAt(Math.floor(Math.random() * possible.length));
+        var possible = "abcdefghijklmnopqrstuvwxyz0123456789";
+        for(var i = 0; i < keyLength; i++ ){
+            key += possible[Math.floor(Math.random() * possible.length)];
         }
         return key;
     };
 
-    //Updates room data
-    var updateRoom = function(roomName, roomData){
-        var temp;
-        //Checks that required data is there
-        if(!roomData.name){
-            console.error('Error: updateRoom : No room name specified.');
-            return;
-        } else if(!roomData.roomJoinPassword){
-            console.error('Error: updateRoom : No room join password specified.');
-            return;
-        } else if(!roomData.adminKey){
-            console.error('Error: updateRoom : No admin key specified.');
-            return;
-        } else if(!roomData.controlKey){
-            console.error('Error: updateRoom : No control key specified.');
-            return;
+    //Endpoint for deleting a room with the supplied room name
+    socket.on('deleteRoom', function(roomName){
+        if(!roomName || !roomName.length){
+            console.error('Error: No room name provided for room deletion.');
+            socket.emit('deleteRoomHandler', {'message': 'No room name supplied for room deletion.'});
+        } else{
+            deleteRoom(roomName);
         }
-        var updated = false;
+    });
+
+    //Deletes the room from memory and and the filesystem with the inputted room name
+    var deleteRoom = function(roomName){
         for(var i = 0; i < rooms.length; i++){
-            if(rooms[i].name === roomName){
-                rooms[i] = roomData;
-                temp = rooms[i];
-                updated = true;
+            if(rooms[i].name == roomName){
+                rooms.splice(i, 1);
+            } else if(i == rooms.length - 1){
+                console.error('Error: deleteRoom: No room with the room name "' + roomName + '" was found.');
+                socket.emit('deleteRoomHandler', {'message':'Room was not found.'});
+                return;
             }
         }
-        if(!updated){
-            console.error("Error: updateRoom: No room found with the room name \"" + roomName + "\".");
-            return;
-        }
-        saveRoomToFile(temp);
+        //Deletes the JSON file corresponding to the inputted room name
+        fs.unlink(__dirname + '/RoomSessions/' + roomName + '.json', function(err){
+            if(err){
+                console.error('Error: deleteRoom: ' + err);
+            } else{
+                socket.emit('deleteRoomHandler', true);
+            }
+        })
     };
 
-//Changes the guest password of the inputted roomName
+    //Changes the specified attribute of the inputted roomName
     var changeRoomPassword = function(roomName, changedAttribute, attributeValue){
         for(var i = 0; i < rooms.length; i++){
             if(rooms[i].roomName == roomName){
@@ -314,4 +317,8 @@ io.on('connection', function (socket) {
         }
     };
 
+    //A user has disconnected
+    socket.on('disconnect', function (data) {
+        console.log(new Date().toLocaleTimeString() + ' | A user has disconnected. Total users: ' + io.engine.clientsCount);
+    });
 });

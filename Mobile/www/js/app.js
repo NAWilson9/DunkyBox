@@ -33,11 +33,4 @@ app.run(function($ionicPlatform) {
     //socket.emit('nickCity', 'Nick, there\'s a hundred million otha things that i\'d ratha do');
 
   });
-});
-
-app.controller('homeController', function($scope){
-
-  $scope.content = "hey potato";
-
-});
-
+})
