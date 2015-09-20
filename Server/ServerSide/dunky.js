@@ -149,6 +149,7 @@ io.on('connection', function (socket) {
 
     //Updates room data
     var updateRoom = function(roomName, roomData){
+        var temp;
         //Checks that required data is there
         if(!roomData.name){
             console.error('Error: updateRoom : No room name specified.');
@@ -167,6 +168,7 @@ io.on('connection', function (socket) {
         for(var i = 0; i < rooms.length; i++){
             if(rooms[i].name == roomName){
                 rooms[i] = roomData;
+                temp = rooms[i];
                 updated = true;
             }
         }
@@ -174,7 +176,7 @@ io.on('connection', function (socket) {
             console.error("Error: updateRoom: No room found with the room name \"" + roomName + "\".");
             return;
         }
-        saveRoomToFile(rooms[i]);
+        saveRoomToFile(temp);
     };//Todo
 
 //Returns roomdata from rooms array
