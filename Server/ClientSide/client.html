@@ -6,29 +6,48 @@
     <!-- Javascript dependencies -->
     <script src="./socket.io/socket.io.js"></script>
     <script>var socket = io.connect(window.location.origin);</script>
+    <script src="AudioPlayer.js"></script>
     <script src="tools.js"></script>
 </head>
 <br>
 <span>Enter the link to the song:</span>
-<input id="hype1" type="text">
+<input id="YTLinkBox" type="text" placeholder="Youtube Link">
+<input id="RoomName" type="text" placeholder="Room Name">
 <button id="hype2" onclick="pushSong()">Add</button>
 <button id="hype3" onclick="popSong()">Pop</button>
+<span id="state">State: </span>
+
+<div id="player"></div>
+<div id="error" style="text-align: center"></div>
+</br>
+<div id="title" style="text-align: center"></div>
+</br>
+<div id="buttons" style="text-align: center">
+    <button id="play" onclick="playVideo()">Play</button>
+    <button id="pause" onclick="pauseVideo()">Pause</button>
+    <button id="next" onclick="playNext()">Next</button>
+    <button id="die" onclick="diePotato()">Die Potato</button>
+</div>
 <div>
     <br/>
     <span>Room Name</span>
     <input id="hypea" type="text">
-    <span>Room Join Password</span>
-    <input id="hypeb" type="text">
-    <span>Admin Key</span>
-    <input id="hypec" type="text">
-    <span>Control Key</span>
-    <input id="hyped" type="text">
     <button onclick="testerino()">New Room</button>
+    <button onclick="deleteTest()">Delete Room</button>
     <button onclick="test()">Print Rooms</button>
-    <button onclick="deleteTest()">Delete Last Room</button>
+    <br/>
+    <span>Room Name: <span id="1"></span></span>
+    <br/>
+    <span>Room Join Password: <span id="2"></span></span>
+    <br/>
+    <span>Admin Key <span id="3"></span></span>
+    <br/>
+    <span>Control Key <span id="4"></span></span>
+    <br/>
+    <span id="trash"></span>
 </div>
 </br>
-<span id="curlist">dasd</span>
+<span id="curlist"></span>
 </br>
 <span id="popped"></span>
 </body>

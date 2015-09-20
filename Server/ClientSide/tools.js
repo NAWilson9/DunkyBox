@@ -1,46 +1,40 @@
 /**
  * Created by Nick on 9/18/2015.
  */
-
-    var pushSong = function () {
-        var link = document.getElementById('hype1').value;
-        if (link.length)
-            socket.emit('pushSong', link);
-    };
-
-var popSong = function () {
-    socket.emit('popSong');
-};
-
-socket.on('returnSong', function (data) {
-    if (data.length) {
-        console.log(data);
-        document.getElementById('popped').textContent = 'Last Popped Song: ' + data;
-    }
-    else {
-        document.getElementById('popped').innerHTML = 'Last Popped Song: None. (Empty List)';
-    }
-});
+(function(){
+    socket.on('createRoomHandler', function(data){
+        document.getElementById('1').innerHTML = data.name;
+        document.getElementById('2').innerHTML = data.roomJoinPassword;
+        document.getElementById('3').innerHTML = data.adminKey;
+        document.getElementById('4').innerHTML = data.controlKey;
+        console.log(JSON.stringify(data));
+    });
 
 
-socket.on('updateCurList', function (data) {
-    if (data.length) {
-        console.log(data);
-        document.getElementById('curlist').textContent = 'Current List: ' + data;
-    }
-    else {
-        document.getElementById('curlist').innerHTML = 'Current List: Empty!';
-    }
-});
+    socket.on('returnSong', function (data) {
+        if (data) {
+            loadYTID(data);
+            document.getElementById('popped').textContent = 'Last Popped Song: ' + data;
+        }
+        else {
+            document.getElementById('popped').innerHTML = 'Last Popped Song: None. (Empty List)';
+        }
+    });
+
+
+    socket.on('updateCurList', function (data) {
+        if (data.length) {
+            console.log(data);
+            document.getElementById('curlist').textContent = 'Current List: ' + data;
+        }
+        else {
+            document.getElementById('curlist').innerHTML = 'Current List: Empty!';
+        }
+    });
+})();
 
 var testerino = function(){
-    var room = {
-        'name': document.getElementById('hypea').value,
-        'roomJoinPassword': document.getElementById('hypeb').value,
-        'adminKey': document.getElementById('hypec').value,
-        'controlKey': document.getElementById('hyped').value
-    };
-    socket.emit('createRoom', room);
+    socket.emit('createRoom', document.getElementById('hypea').value);
 };
 
 var test = function(){
@@ -50,3 +44,24 @@ var test = function(){
 var deleteTest = function(){
     socket.emit('deleteRoom', document.getElementById('hypea').value);
 };
+
+var pushSong = function () {
+    var link = document.getElementById('YTLinkBox').value;
+    document.getElementById('YTLinkBox').value = '';
+    var roomname = document.getElementById("RoomName").value;
+    GLOBAL_ROOMNAME = roomname;
+    var id = parseYoutubeURL(link);
+    if (link.length && roomname.length)
+        socket.emit('pushSong', {
+            "id" : id,
+            "roomName" : roomname
+        });
+};
+
+var popSong = function () {
+    var roomName = document.getElementById("RoomName").value;
+    if(roomName.length){
+        socket.emit('popSong',roomName);
+    }
+};
+
