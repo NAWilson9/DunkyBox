@@ -17,11 +17,6 @@ var keyLength = 9;
 
 //Session setup
 var rooms = [];
-var songData = {
-    "roomKeys" : [
-        {"key" : "testkey", "queue" : []}
-    ]
-};
 
 //Todo link your libraries here...
 app.use(express.static('../ClientSide/', {
@@ -33,45 +28,6 @@ app.use(express.static('../ClientSide/', {
  Server functions
  */
 //Todo put your server functions here
-
-//Updates room data
-var updateRoom = function(roomName, roomData){
-    //Checks that required data is there
-    if(!roomData.name){
-        console.error('Error: updateRoom : No room name specified.');
-        return;
-    } else if(!roomData.roomJoinPassword){
-        console.error('Error: updateRoom : No room join password specified.');
-        return;
-    } else if(!roomData.adminKey){
-        console.error('Error: updateRoom : No admin key specified.');
-        return;
-    } else if(!roomData.controlKey){
-        console.error('Error: updateRoom : No control key specified.');
-        return;
-    }
-    var updated = false;
-    for(var i = 0; i < rooms.length; i++){
-        if(rooms[i].name == roomName){
-            rooms[i] = roomData;
-            updated = true;
-        }
-    }
-    if(!updated){
-        console.error("Error: updateRoom: No room found with the room name \"" + roomName + "\".");
-        return;
-    }
-    saveRoomToFile(rooms[i]);
-};//Todo
-
-//Returns roomdata from rooms array
-var getRoom = function(roomName){
-    for(var i = 0; i < rooms.length; i++){
-        if(rooms[i].name === roomName){
-            return rooms[i];
-        }
-    }
-};//Todo
 
 /*
 //Re-populates rooms object with pre-existing JSON rooms
@@ -180,7 +136,46 @@ io.on('connection', function (socket) {
         }
     });//Todo
 
-    socket.on('testRoom', function(data){
+    //Updates room data
+    var updateRoom = function(roomName, roomData){
+        //Checks that required data is there
+        if(!roomData.name){
+            console.error('Error: updateRoom : No room name specified.');
+            return;
+        } else if(!roomData.roomJoinPassword){
+            console.error('Error: updateRoom : No room join password specified.');
+            return;
+        } else if(!roomData.adminKey){
+            console.error('Error: updateRoom : No admin key specified.');
+            return;
+        } else if(!roomData.controlKey){
+            console.error('Error: updateRoom : No control key specified.');
+            return;
+        }
+        var updated = false;
+        for(var i = 0; i < rooms.length; i++){
+            if(rooms[i].name == roomName){
+                rooms[i] = roomData;
+                updated = true;
+            }
+        }
+        if(!updated){
+            console.error("Error: updateRoom: No room found with the room name \"" + roomName + "\".");
+            return;
+        }
+        saveRoomToFile(rooms[i]);
+    };//Todo
+
+//Returns roomdata from rooms array
+    var getRoom = function(roomName){
+        for(var i = 0; i < rooms.length; i++){
+            if(rooms[i].name === roomName){
+                return rooms[i];
+            }
+        }
+    };//Todo
+
+    socket.on('testRoom', function(){
         console.log(JSON.stringify(rooms));
     });
 
@@ -304,7 +299,7 @@ io.on('connection', function (socket) {
     };//Todo
 
     //A user has disconnected
-    socket.on('disconnect', function (data) {
+    socket.on('disconnect', function () {
         console.log(new Date().toLocaleTimeString() + ' | A user has disconnected. Total users: ' + io.engine.clientsCount);
     });
 });
