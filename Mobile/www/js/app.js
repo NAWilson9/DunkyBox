@@ -60,10 +60,21 @@ app.run(function($ionicPlatform) {
     // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
     // for form inputs)
     if(window.cordova && window.cordova.plugins.Keyboard) {
-      cordova.plugins.Keyboard.hideKeyboardAccessoryBar(true);
+        cordova.plugins.Keyboard.hideKeyboardAccessoryBar(true);
     }
     if(window.StatusBar) {
-      StatusBar.styleDefault();
+        StatusBar.styleDefault();
+    }
+
+    if(window.plugins && window.plugins.webintent){
+        window.plugins.webintent.getExtra(window.plugins.webintent.EXTRA_TEXT,
+          function(url) {
+            // url is the value of EXTRA_TEXT
+            alert('getExtra: ' + url);
+          }, function() {
+            // There was no extra supplied.
+          }
+        );
     }
 
     // socket bs
