@@ -130,7 +130,7 @@ var initializeServer = function(functions, startServer) {
 //Starts the server
 (function(){
     //Link required startup methods
-    var functions = [restoreRooms];//Todo add startup dependent functions here
+    var functions = [];//Todo add startup dependent functions here
 
     //What to do once initialization finishes
     var start = function(){
