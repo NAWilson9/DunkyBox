@@ -50,7 +50,7 @@ function onPlayerStateChange(event) {
     }
 
     if (getVideoState() === 0) {
-        console.log('here')
+        console.log('here');
         playNext();
     }
 }

@@ -18,27 +18,10 @@ var keyLength = 9;
 //Session setup
 var rooms = [];
 
-//Todo link your libraries here...
 app.use(express.static('../ClientSide/', {
     extensions: ['html'],
     index: 'client.html'
 }));
-
-/*
- Server functions
- */
-//Todo put your server functions here
-
-
-
-//Returns roomdata from rooms array
-var getRoom = function(roomName){
-    for(var i = 0; i < rooms.length; i++){
-        if(rooms[i].name === roomName){
-            return rooms[i];
-        }
-    }
-};//Todo
 
 /*
 //Re-populates rooms object with pre-existing JSON rooms
@@ -97,7 +80,7 @@ var initializeServer = function(functions, startServer) {
 //Starts the server
 (function(){
     //Link required startup methods
-    var functions = [];//Todo add startup dependent functions here
+    var functions = [];
 
     //What to do once initialization finishes
     var start = function(){
@@ -121,76 +104,52 @@ io.on('connection', function (socket) {
     //On connection...
     console.log(new Date().toLocaleTimeString() + ' | A user has connected. IP Address: ' + socket.handshake.address +  ' Total users: ' + io.engine.clientsCount);
 
-    /*
-     ** Socket routes
-     */
-    socket.on('pushSong', function(data){
-        var room = getRoom(data.roomName);
-
-        if(room) {
-            room.playlist.push(data.id);
-            updateRoom(room.name, room);
-            socket.emit("updateCurList", getRoom(data.roomName).playlist.toString());
-        }
-    });//Todo
-
-    socket.on('popSong', function(roomName){
-
-        var room = getRoom(roomName);
-
-        if(room){
-            socket.emit("returnSong", room.playlist.shift());
-            socket.emit("updateCurList", room.playlist.toString());
-            console.log('Current list: ' + room.playlist.toString());
-
-            updateRoom(roomName, room);
-        }
-    });//Todo
-
-    //Updates room data
-    var updateRoom = function(roomName, roomData){
-        var temp;
-        //Checks that required data is there
-        if(!roomData.name){
-            console.error('Error: updateRoom : No room name specified.');
-            return;
-        } else if(!roomData.roomJoinPassword){
-            console.error('Error: updateRoom : No room join password specified.');
-            return;
-        } else if(!roomData.adminKey){
-            console.error('Error: updateRoom : No admin key specified.');
-            return;
-        } else if(!roomData.controlKey){
-            console.error('Error: updateRoom : No control key specified.');
-            return;
-        }
-        var updated = false;
-        for(var i = 0; i < rooms.length; i++){
-            if(rooms[i].name == roomName){
-                rooms[i] = roomData;
-                temp = rooms[i];
-                updated = true;
-            }
-        }
-        if(!updated){
-            console.error("Error: updateRoom: No room found with the room name \"" + roomName + "\".");
-            return;
-        }
-        saveRoomToFile(temp);
-    };//Todo
-
-//Returns roomdata from rooms array
-    var getRoom = function(roomName){
-        for(var i = 0; i < rooms.length; i++){
-            if(rooms[i].name === roomName){
-                return rooms[i];
-            }
-        }
-    };//Todo
-
     socket.on('testRoom', function(){
         console.log(JSON.stringify(rooms));
     });
+
+    /*var songS = {
+        'type': 'soundcloud',
+        'id': 'aedh0934y'
+    };*/
+
+    //Receives a song object and adds it to the playlist
+    socket.on('addSong', function(data){
+        var index = getRoomIndex(data.roomName);
+        if(index != null){
+            rooms[index].playlist.push(data.song);
+            saveRoomToFile(rooms[index]);
+            socket.emit('addSongHandler', true);
+        } else {
+            console.error('Error: Improper or no room name specified.');
+            socket.emit('addSongHandler', 'Improper or no room name specified.');
+        }
+    });
+
+    //Removes the first song in the playlist of the room specified
+    socket.on('removeSong', function(roomName){
+        var index = getRoomIndex(roomName);
+        if(index != null){
+            rooms[index].playlist.shift();
+            saveRoomToFile(rooms[index]);
+            socket.emit('removeSongHandler', true);
+        } else {
+            console.error('Error: Improper or no room name specified.');
+            socket.emit('removeSongHandler', 'Improper or no room name specified.');
+        }
+    });
+
+    //Returns the index to the room with the inputted name
+    var getRoomIndex = function(roomName){
+        var index;
+        for(var i = 0; i < rooms.length; i++){
+            if(rooms[i].name === roomName){
+                index = i;
+                break;
+            }
+        }
+        return index;
+    };
 
     //Endpoint for creating a room with the supplied room name
     socket.on('createRoom', function(roomName){

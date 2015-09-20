@@ -36,32 +36,35 @@
 var testerino = function(){
     socket.emit('createRoom', document.getElementById('hypea').value);
 };
-
 var test = function(){
     socket.emit('testRoom');
 };
-
 var deleteTest = function(){
     socket.emit('deleteRoom', document.getElementById('hypea').value);
 };
 
-var pushSong = function () {
+var addSong = function () {
     var link = document.getElementById('YTLinkBox').value;
     document.getElementById('YTLinkBox').value = '';
     var roomname = document.getElementById("RoomName").value;
     GLOBAL_ROOMNAME = roomname;
     var id = parseYoutubeURL(link);
     if (link.length && roomname.length)
-        socket.emit('pushSong', {
-            "id" : id,
-            "roomName" : roomname
+        var song = {
+            'type': 'youtube',
+            'id': id
+        };
+    console.log(JSON.stringify(song));
+        socket.emit('addSong', {
+            "roomName" : roomname,
+            "song": song
         });
 };
 
-var popSong = function () {
+var removeSong = function () {
     var roomName = document.getElementById("RoomName").value;
     if(roomName.length){
-        socket.emit('popSong',roomName);
+        socket.emit('removeSong',roomName);
     }
 };
 
